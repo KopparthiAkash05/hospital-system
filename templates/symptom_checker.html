@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}AI Symptom Checker{% endblock %}
+
+{% block content %}
+<div class="symptom-checker-container">
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-stethoscope"></i> AI Symptom Checker</h1>
+            <p>Enter your symptoms to get department suggestions</p>
+        </div>
+        
+        <div class="symptom-checker-box">
+            <form method="POST" class="symptom-form">
+                <div class="form-group">
+                    <label for="symptoms">
+                        <i class="fas fa-notes-medical"></i> Describe your symptoms:
+                    </label>
+                    <textarea 
+                        name="symptoms" 
+                        id="symptoms" 
+                        rows="4"
+                        placeholder="e.g., Fever, Cough, Headache..."
+                        required
+                    >{{ symptoms }}</textarea>
+                    <small class="form-text">Separate multiple symptoms with commas</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    <i class="fas fa-search"></i> Check Symptoms
+                </button>
+            </form>
+            
+            {% if suggested_department %}
+            <div class="result-box">
+                <div class="result-header">
+                    <i class="fas fa-brain"></i>
+                    <h3>AI Suggestion</h3>
+                </div>
+                <div class="result-content">
+                    <p>Based on your symptoms: <strong>"{{ symptoms }}"</strong></p>
+                    <div class="suggested-department">
+                        <i class="fas fa-hospital"></i>
+                        <h2>{{ suggested_department }}</h2>
+                    </div>
+                    <p class="recommendation">
+                        We recommend booking an appointment with a specialist in 
+                        <strong>{{ suggested_department }}</strong>
+                    </p>
+                    <a href="{{ url_for('view_doctors') }}?specialization={{ suggested_department }}" 
+                       class="btn btn-success btn-block">
+                        <i class="fas fa-calendar-plus"></i> Book Appointment
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Common Symptoms Quick Select -->
+        <div class="common-symptoms">
+            <h3><i class="fas fa-list"></i> Common Symptoms</h3>
+            <div class="symptom-tags">
+                <button class="symptom-tag" onclick="addSymptom('Fever')">Fever</button>
+                <button class="symptom-tag" onclick="addSymptom('Cough')">Cough</button>
+                <button class="symptom-tag" onclick="addSymptom('Headache')">Headache</button>
+                <button class="symptom-tag" onclick="addSymptom('Chest Pain')">Chest Pain</button>
+                <button class="symptom-tag" onclick="addSymptom('Stomach Pain')">Stomach Pain</button>
+                <button class="symptom-tag" onclick="addSymptom('Back Pain')">Back Pain</button>
+                <button class="symptom-tag" onclick="addSymptom('Skin Rash')">Skin Rash</button>
+                <button class="symptom-tag" onclick="addSymptom('Joint Pain')">Joint Pain</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.symptom-checker-container {
+    padding: 3rem 0;
+    min-height: calc(100vh - 200px);
+}
+
+.symptom-checker-box {
+    background: var(--white);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    max-width: 700px;
+    margin: 0 auto 2rem;
+}
+
+.symptom-form textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.symptom-form textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.result-box {
+    margin-top: 2rem;
+    border: 2px solid var(--success-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: slideIn 0.5s ease;
+}
+
+.result-header {
+    background: var(--success-color);
+    color: var(--white);
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.result-header i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.result-content {
+    padding: 2rem;
+    text-align: center;
+}
+
+.suggested-department {
+    background: var(--gray-100);
+    padding: 2rem;
+    margin: 1.5rem 0;
+    border-radius: var(--radius);
+}
+
+.suggested-department i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.suggested-department h2 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin: 0;
+}
+
+.recommendation {
+    font-size: 1.1rem;
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+}
+
+.common-symptoms {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.common-symptoms h3 {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.symptom-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.symptom-tag {
+    padding: 0.5rem 1rem;
+    background: var(--gray-100);
+    border: 2px solid var(--gray-200);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.symptom-tag:hover {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<script>
+function addSymptom(symptom) {
+    const textarea = document.getElementById('symptoms');
+    const currentValue = textarea.value;
+    if (currentValue) {
+        textarea.value = currentValue + ', ' + symptom;
+    } else {
+        textarea.value = symptom;
+    }
+}
+</script>
+{% endblock %}

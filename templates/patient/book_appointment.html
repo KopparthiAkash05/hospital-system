@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-calendar-plus"></i>
+            <h2>Book Appointment</h2>
+            <p>With Dr. {{ doctor.name }}</p>
+        </div>
+        
+        <div class="doctor-summary">
+            <p><strong>Specialization:</strong> {{ doctor.specialization }}</p>
+            <p><strong>Experience:</strong> {{ doctor.experience }} years</p>
+            <p><strong>Available Slots:</strong> {{ doctor.available_slots }}</p>
+        </div>
+        
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="date"><i class="fas fa-calendar"></i> Select Date</label>
+                <input type="date" name="date" id="date" required min="{{ today }}">
+            </div>
+            
+            <div class="form-group">
+    <label for="time"><i class="fas fa-clock"></i> Select Time</label>
+    <select name="time" id="time" required>
+        <option value="">-- Select Available Time --</option>
+        {% for slot in available_slots %}
+            <option value="{{ slot['24h'] }}">{{ slot['12h'] }}</option>
+        {% endfor %}
+    </select>
+    <small class="text-muted">* Available Monday to Saturday only</small>
+</div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-check"></i> Confirm Booking
+            </button>
+            
+            <a href="{{ url_for('view_doctors') }}" class="btn btn-secondary btn-block">
+                <i class="fas fa-arrow-left"></i> Back to Doctors
+            </a>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date');
+        
+        // Function to check if a date is Sunday
+        function isSunday(date) {
+            return date.getDay() === 0; // 0 is Sunday
+        }
+
+        dateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            
+            // If the selected date is a Sunday, clear it and show an alert
+            if (isSunday(selectedDate)) {
+                alert('The doctor is not available on Sundays. Please select a date from Monday to Saturday.');
+                this.value = ''; // Clear the invalid date
+            }
+        });
+    });
+</script>
+{% endblock %}

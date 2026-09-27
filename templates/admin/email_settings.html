@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Email Settings{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-envelope"></i> Email Reminder Settings</h1>
+    </div>
+    
+    <div class="dashboard-section">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Email reminders are sent automatically at 9:00 AM</strong> for all appointments scheduled for the next day.
+        </div>
+        
+        <div class="email-stats">
+            <div class="stat-card">
+                <i class="fas fa-clock"></i>
+                <h3>9:00 AM</h3>
+                <p>Reminder Time</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-calendar-check"></i>
+                <h3>1 Day Before</h3>
+                <p>Advance Notice</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

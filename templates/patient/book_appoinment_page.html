@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-plus"></i> Book an Appointment</h1>
+        <p>Select a doctor and schedule your visit</p>
+    </div>
+    
+    <div class="booking-container">
+        <!-- Step 1: Select Doctor -->
+        <div class="booking-step">
+            <h2><i class="fas fa-user-md"></i> Step 1: Choose a Doctor</h2>
+            <div class="doctors-grid">
+                {% for doctor in doctors %}
+                <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}" data-doctor-name="{{ doctor.name|e }}">
+                    <div class="doctor-avatar">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="doctor-info">
+                        <h3>Dr. {{ doctor.name }}</h3>
+                        <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                        <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                    </div>
+                    <div class="select-indicator">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Step 2: Select Date & Time -->
+        <div class="booking-step" id="datetimeStep" style="display: none;">
+            <h2><i class="fas fa-calendar-alt"></i> Step 2: Select Date & Time</h2>
+            <div id="selectedDoctorInfo" class="selected-doctor-info"></div>
+            
+            <form method="POST" action="{{ url_for('patient_book_appointment_page') }}" id="bookingForm" class="booking-form" onsubmit="return validateBooking()">
+                <input type="hidden" name="doctor_id" id="selectedDoctorId" required>
+                
+                <div class="form-group">
+                    <label for="date"><i class="fas fa-calendar"></i> Select Date</label>
+                    <input type="date" name="date" id="date" required>
+                </div>
+                
+                <div class="form-group">
+    <label for="time"><i class="fas fa-clock"></i> Select Time</label>
+    <select name="time" id="time" required>
+        <option value="">-- Select Available Time --</option>
+        {% for slot in available_slots %}
+            <option value="{{ slot['24h'] }}">{{ slot['12h'] }}</option>
+        {% endfor %}
+    </select>
+    <small class="text-muted">* Available Monday to Saturday only</small>
+</div>
+                
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    <i class="fas fa-check"></i> Confirm Booking
+                </button>
+                
+                <a href="{{ url_for('view_doctors') }}" class="btn btn-secondary btn-block" style="margin-top: 1rem;">
+                    <i class="fas fa-arrow-left"></i> Back to Doctors
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.booking-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.booking-step {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.booking-step h2 {
+    margin-bottom: 1.5rem;
+    color: var(--gray-800);
+}
+
+.doctors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.doctor-card {
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.doctor-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.doctor-card.selected {
+    border-color: var(--success-color);
+    background: #f0fdf4;
+}
+
+.doctor-card.selected .select-indicator {
+    display: block;
+}
+
+.select-indicator {
+    display: none;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: var(--success-color);
+    font-size: 2rem;
+}
+
+.selected-doctor-info {
+    background: #dbeafe;
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--primary-color);
+}
+
+.selected-doctor-info h3 {
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.booking-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.booking-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.booking-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.booking-form input,
+.booking-form select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: 1rem;
+}
+
+.booking-form input:focus,
+.booking-form select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+}
+</style>
+
+<script>
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    
+    // Add click handlers to all doctor cards
+    document.querySelectorAll('.doctor-card').forEach(card => {
+        card.addEventListener('click', function() {
+            selectDoctor(this);
+        });
+    });
+});
+
+function selectDoctor(element) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.doctor-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    element.classList.add('selected');
+    
+    // Get doctor info from data attributes
+    const doctorId = element.getAttribute('data-doctor-id');
+    const doctorName = element.getAttribute('data-doctor-name');
+    
+    // Set doctor ID in form
+    document.getElementById('selectedDoctorId').value = doctorId;
+    
+    // Show selected doctor info
+    const infoDiv = document.getElementById('selectedDoctorInfo');
+    infoDiv.innerHTML = `<h3><i class="fas fa-user-md"></i> Selected: Dr. ${doctorName}</h3>`;
+    
+    // Show date/time selection
+    document.getElementById('datetimeStep').style.display = 'block';
+    
+    // Scroll to datetime step
+    setTimeout(() => {
+        document.getElementById('datetimeStep').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+}
+
+function validateBooking() {
+    const doctorId = document.getElementById('selectedDoctorId').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+    
+    if (!doctorId) {
+        alert('Please select a doctor first!');
+        return false;
+    }
+    
+    if (!date) {
+        alert('Please select a date!');
+        return false;
+    }
+    
+    if (!time) {
+        alert('Please select a time slot!');
+        return false;
+    }
+    
+    // Check if date is in the past
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+        alert('Please select a future date!');
+        return false;
+    }
+    
+    return true;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor Settings - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 40px auto; padding: 20px;">
+    <h2 style="text-align: center; margin-bottom: 30px; color: #333;">
+        <i class="fas fa-user-cog"></i> Doctor Profile Settings
+    </h2>
+
+    <form method="POST" style="background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="name" style="font-weight: bold; display: block; margin-bottom: 5px;">Full Name</label>
+            <input type="text" name="name" id="name" value="{{ doctor.name }}" required 
+                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="phone" style="font-weight: bold; display: block; margin-bottom: 5px;">Phone Number</label>
+            <input type="text" name="phone" id="phone" value="{{ doctor.phone }}" required 
+                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="address" style="font-weight: bold; display: block; margin-bottom: 5px;">
+                <i class="fas fa-map-marker-alt"></i> Clinic Address
+            </label>
+            <input type="text" name="address" id="address" value="{{ doctor.address or '' }}" placeholder="Enter full clinic address" 
+                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            <small style="color: #6c757d;">Coordinates will be updated automatically for the Nearby Doctors feature.</small>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="available_slots" style="font-weight: bold; display: block; margin-bottom: 5px;">
+                <i class="fas fa-clock"></i> Available Slots
+            </label>
+            <input type="text" name="available_slots" id="available_slots" value="{{ doctor.available_slots or '' }}" 
+                   placeholder="e.g., Mon-Fri: 10AM-5PM" 
+                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <button type="submit" style="width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+    </form>
+</div>
+{% endblock %}

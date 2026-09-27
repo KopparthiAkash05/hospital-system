@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-user-md"></i> Dr. {{ session.name }}</h1>
+            <p>Manage your appointments and schedule</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-calendar-day"></i>
+                <h3>{{ today_appointments|length }}</h3>
+                <p>Today's Appointments</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-clock"></i>
+                <h3>{{ pending_appointments|length }}</h3>
+                <p>Pending Requests</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle"></i>
+                <h3>{{ completed_appointments|length }}</h3>
+                <p>Completed</p>
+            </div>
+        </div>
+        
+        <!-- Today's Appointments -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-calendar-check"></i> Today's Appointments</h2>
+            {% if today_appointments %}
+            <div class="appointments-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Address</th>
+                            <th>Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in today_appointments %}
+                        <tr>
+                            <td><strong>{{ appointment.patient_name }}</strong></td>
+                            <td>{{ appointment.patient_age or 'N/A' }}</td>
+                            <td>{{ appointment.patient_gender or 'N/A' }}</td>
+                            <td>{{ appointment.patient_phone }}</td>
+                            <td>{{ appointment.patient_email }}</td>
+                            <td>{{ appointment.patient_address or 'N/A' }}</td>
+                            <td><strong>{{ appointment.time_formatted }}</strong></td>
+    <td>
+    <button type="button" class="btn btn-success btn-sm complete-btn" 
+            data-id="{{ appointment.appointment_id }}" 
+            data-name="{{ appointment.patient_name }}">
+        <i class="fas fa-check"></i> Complete
+    </button>
+</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>No appointments scheduled for today</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pending Appointments -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-inbox"></i> Pending Appointment Requests</h2>
+            {% if pending_appointments %}
+            <div class="appointments-list">
+                {% for appointment in pending_appointments %}
+                <div class="appointment-card">
+                    <div class="appointment-info">
+                        <h3>{{ appointment.patient_name }}</h3>
+                        <p><i class="fas fa-calendar"></i> {{ appointment.date }}</p>
+                        <p><i class="fas fa-clock"></i> {{ appointment.time_formatted }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ appointment.patient_email }}</p>
+                        <p><i class="fas fa-phone"></i> {{ appointment.patient_phone }}</p>
+                    </div>
+                    <div class="appointment-actions">
+                        <a href="{{ url_for('approve_appointment', appointment_id=appointment.appointment_id) }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-check"></i> Approve
+                        </a>
+                        <a href="{{ url_for('reject_appointment', appointment_id=appointment.appointment_id) }}" 
+                           class="btn btn-danger">
+                            <i class="fas fa-times"></i> Reject
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No pending requests</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Completed Appointments -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-check-double"></i> Completed Appointments</h2>
+            
+            <!-- Search and Filter Form -->
+            <div class="search-filters">
+                <form method="GET" action="{{ url_for('doctor_dashboard') }}" class="search-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="search"><i class="fas fa-search"></i> Search Patient</label>
+                            <input type="text" 
+                                   name="search" 
+                                   id="search" 
+                                   placeholder="Search by name, email, or phone"
+                                   value="{{ search_patient if search_patient else '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date_filter"><i class="fas fa-calendar"></i> Filter by Date</label>
+                            <input type="date" 
+                                   name="date_filter" 
+                                   id="date_filter"
+                                   value="{{ filter_date if filter_date else '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            {% if completed_appointments %}
+            <div class="appointments-table">
+                <p class="results-count">Found {{ completed_appointments|length }} completed appointment(s)</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Address</th>
+                            <th>Specialization</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                             <th>Follow-Up</th> 
+                        </tr>
+                    </thead>
+                    <tbody>
+    {% for appointment in completed_appointments %}
+    <tr>
+        <td><strong>{{ appointment.patient_name }}</strong></td>
+        <td>{{ appointment.patient_age or 'N/A' }}</td>
+        <td>{{ appointment.patient_gender or 'N/A' }}</td>
+        <td>{{ appointment.patient_phone }}</td>
+        <td>{{ appointment.patient_email }}</td>
+        <td>{{ appointment.patient_address or 'N/A' }}</td>
+        <td><span class="badge badge-approved">{{ appointment.specialization }}</span></td>
+        <td>{{ appointment.date }}</td>
+        <td><strong>{{ appointment.time_formatted }}</strong></td>
+        
+        <!-- PASTE THIS CORRECTED CODE HERE -->
+        <td>
+            {% if appointment.follow_up_date %}
+                <span style="color: #007bff; font-weight: bold;">{{ appointment.follow_up_date }}</span>
+            {% else %}
+                <strong style="color: #999;">-</strong>
+            {% endif %}
+        </td>
+        <!-- END OF PASTED CODE -->
+        
+    </tr>
+    {% endfor %}
+</tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-check"></i>
+                <p>
+                    {% if search_patient or filter_date %}
+                        No completed appointments found matching your search criteria
+                    {% else %}
+                        No completed appointments yet
+                    {% endif %}
+                </p>
+                {% if search_patient or filter_date %}
+                <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-redo"></i> Clear Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- Complete Appointment Modal -->
+<div id="completeModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+    <div style="background-color:#fff; margin:10% auto; padding:20px; border-radius:8px; width:90%; max-width:400px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin-top:0; color:#333;">Complete Appointment</h3>
+        <p id="modalPatientName" style="color:#666;"></p>
+        
+        <form action="{{ url_for('complete_appointment') }}" method="POST">
+            <input type="hidden" name="appointment_id" id="modalAppointmentId">
+            
+            <div style="margin-bottom:15px;">
+                <label for="follow_up_days" style="display:block; margin-bottom:5px; font-weight:bold;">
+                    Schedule follow-up in (days):
+                </label>
+                <input type="number" name="follow_up_days" id="follow_up_days" min="0" placeholder="e.g., 15 (Leave 0 for none)" 
+                       style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <small style="color:#888;">Enter 0 or leave blank if no follow-up is needed.</small>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="closeCompleteModal()" 
+                        style="padding:8px 16px; background:#ccc; border:none; border-radius:4px; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        style="padding:8px 16px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">
+                    Complete & Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Function to open the modal
+    function openCompleteModal(appointmentId, patientName) {
+        document.getElementById('modalAppointmentId').value = appointmentId;
+        document.getElementById('modalPatientName').innerText = 'Patient: ' + patientName;
+        document.getElementById('follow_up_days').value = ''; 
+        document.getElementById('completeModal').style.display = 'block';
+    }
+
+    function closeCompleteModal() {
+        document.getElementById('completeModal').style.display = 'none';
+    }
+
+    // Close modal if user clicks outside
+    window.onclick = function(event) {
+        var modal = document.getElementById('completeModal');
+        if (event.target == modal) {
+            closeCompleteModal();
+        }
+    }
+
+    // Attach click events to all "Complete" buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        const completeButtons = document.querySelectorAll('.complete-btn');
+        
+        completeButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                openCompleteModal(id, name);
+            });
+        });
+    });
+</script>
+{% endblock %}

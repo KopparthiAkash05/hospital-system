@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-user-circle"></i> Welcome, {{ session.name }}!</h1>
+            <p>Manage your appointments and health records</p>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <a href="{{ url_for('view_doctors') }}" class="action-card">
+                    <i class="fas fa-search"></i>
+                    <h3>Find a Doctor</h3>
+                    <p>Search by specialization</p>
+                </a>
+                <a href="{{ url_for('patient_dashboard') }}#history" class="action-card">
+                    <i class="fas fa-history"></i>
+                    <h3>View History</h3>
+                    <p>Check past appointments</p>
+                </a>
+            </div>
+            
+            <!-- Upcoming Appointments -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
+                {% if upcoming_appointments %}
+                <div class="appointments-list">
+                    {% for appointment in upcoming_appointments %}
+                    <div class="appointment-card status-{{ appointment.status.lower() }}">
+                        <div class="appointment-info">
+                            <h3>Dr. {{ appointment.doctor_name }}</h3>
+                            <p><i class="fas fa-stethoscope"></i> {{ appointment.specialization }}</p>
+                            <p><i class="fas fa-calendar"></i> {{ appointment.date }}</p>
+                            <p><i class="fas fa-clock"></i> {{ appointment.time_formatted }}</p>
+                            <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+                        </div>
+                        
+                        <!-- Cancel button for both Pending and Approved appointments -->
+                        {% if appointment.status in ['Pending', 'Approved'] %}
+                        <div class="appointment-actions">
+                            <a href="{{ url_for('cancel_appointment', appointment_id=appointment.appointment_id) }}" 
+                               class="btn btn-danger btn-sm" 
+                               onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No upcoming appointments</p>
+                    <a href="{{ url_for('view_doctors') }}" class="btn btn-primary">Book Now</a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Appointment History -->
+            <div class="dashboard-section" id="history">
+                <h2><i class="fas fa-history"></i> Appointment History</h2>
+                {% if appointment_history %}
+                <div class="appointments-grid">
+                    {% for appointment in appointment_history %}
+                    <div class="appointment-card status-{{ appointment.status.lower() }}">
+                        <div class="appointment-info">
+                            <h3>Dr. {{ appointment.doctor_name }}</h3>
+                            <p><i class="fas fa-stethoscope"></i> {{ appointment.specialization }}</p>
+                            <p><i class="fas fa-calendar"></i> {{ appointment.date }}</p>
+                            <p><i class="fas fa-clock"></i> {{ appointment.time_formatted }}</p>
+                            <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No appointment history</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

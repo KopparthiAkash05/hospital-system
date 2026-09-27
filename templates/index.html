@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Home - MediCare Hospital{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Welcome to MediCare Hospital</h1>
+            <p>Book appointments online, skip the queues, and get quality healthcare at your convenience.</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus"></i> Get Started
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <i class="fas fa-user-md"></i>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose Us?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h3>Easy Booking</h3>
+                <p>Book appointments 24/7 from anywhere with just a few clicks.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h3>Expert Doctors</h3>
+                <p>Access to experienced and specialized healthcare professionals.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Save Time</h3>
+                <p>No more waiting in long queues. Schedule at your convenience.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Secure & Private</h3>
+                <p>Your medical data is protected with enterprise-grade security.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3>5000+</h3>
+                <p>Happy Patients</p>
+            </div>
+            <div class="stat-item">
+                <h3>100+</h3>
+                <p>Expert Doctors</p>
+            </div>
+            <div class="stat-item">
+                <h3>50+</h3>
+                <p>Specializations</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Support</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MediCare Hospital{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-hospital-alt"></i>
+                <span>MediCare Hospital</span>
+            </div>
+            
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            
+            <ul class="nav-menu" id="navMenu">
+                {% if session.get('loggedin') %}
+                    <!-- LOGGED IN USERS -->
+                    
+                    {% if session.get('user_type') == 'patient' %}
+                        <li><a href="{{ url_for('patient_dashboard') }}" class="{% if request.endpoint == 'patient_dashboard' %}active{% endif %}">Dashboard</a></li>
+                        <li><a href="{{ url_for('symptom_checker') }}" class="{% if request.endpoint == 'symptom_checker' %}active{% endif %}">Symptom Checker</a></li>
+                        <li><a href="{{ url_for('nearby_doctors') }}" class="{% if request.endpoint == 'nearby_doctors' %}active{% endif %}">Nearby Doctors</a></li>
+                        <li><a href="{{ url_for('patient_settings') }}" class="{% if request.endpoint == 'patient_settings' %}active{% endif %}">Settings</a></li>
+                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                        
+                    {% elif session.get('user_type') == 'doctor' %}
+                        <li><a href="{{ url_for('doctor_dashboard') }}" class="{% if request.endpoint == 'doctor_dashboard' %}active{% endif %}">Dashboard</a></li>
+                        <li><a href="{{ url_for('doctor_appointments') }}" class="{% if request.endpoint == 'doctor_appointments' %}active{% endif %}">Appointments</a></li>
+                        <li><a href="{{ url_for('manage_schedule') }}" class="{% if request.endpoint == 'manage_schedule' %}active{% endif %}">Schedule</a></li>
+                         <li><a href="{{ url_for('doctor_settings') }}" class="{% if request.endpoint == 'doctor_settings' %}active{% endif %}">Settings</a></li>
+                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                        
+                    {% elif session.get('user_type') == 'admin' %}
+                        <!-- <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Dashboard</a></li>
+                        <li><a href="{{ url_for('admin_doctors') }}" class="{% if request.endpoint == 'admin_doctors' %}active{% endif %}">Doctors</a></li>
+                        <li><a href="{{ url_for('admin_patients') }}" class="{% if request.endpoint == 'admin_patients' %}active{% endif %}">Patients</a></li>
+                        <li><a href="{{ url_for('admin_reports') }}" class="{% if request.endpoint == 'admin_reports' %}active{% endif %}">Reports</a></li> -->
+                        <li><a href="{{ url_for('admin_dashboard') }}">Analytics Dashboard</a></li>
+                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                    {% endif %}
+                    
+                {% else %}
+                    <!-- GUESTS (NOT LOGGED IN) -->
+                    <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                    <li><a href="{{ url_for('login') }}" class="{% if request.endpoint == 'login' %}active{% endif %}">Login</a></li>
+                    <li><a href="{{ url_for('register') }}" class="{% if request.endpoint == 'register' %}active{% endif %}">Register</a></li>
+                    <li><a href="{{ url_for('doctor_login') }}">Doctor Login</a></li>
+                    <li><a href="{{ url_for('doctor_register') }}">Doctor Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible">
+                        {{ message }}
+                        <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3><i class="fas fa-hospital-alt"></i> MediCare Hospital</h3>
+                    <p>Providing quality healthcare services with modern technology.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Home</a></li>
+                        <li><a href="{{ url_for('login') }}">Login</a></li>
+                        <li><a href="{{ url_for('register') }}">Register</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p><i class="fas fa-phone"></i> +1 234 567 890</p>
+                    <p><i class="fas fa-envelope"></i> info@smarthospital.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 MediCare Hospital. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <!-- Smart Triage Chatbot UI -->
+<div id="chatbot-container">
+    <!-- Floating Button -->
+    <button id="chatbot-toggle" onclick="toggleChatbot()">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <!-- Chat Window -->
+    <div id="chatbot-window" class="hidden">
+        <div class="chat-header">
+            <span><i class="fas fa-robot"></i> MediCare Triage Bot</span>
+            <button onclick="toggleChatbot()" class="close-btn">&times;</button>
+        </div>
+        <div id="chat-messages">
+            <div class="message bot">
+                Hello! I'm your MediCare assistant. Where does it hurt today?
+            </div>
+        </div>
+        <div id="chat-options" class="chat-options">
+            <!-- Buttons will be injected here by JS -->
+        </div>
+    </div>
+</div>
+
+<style>
+    #chatbot-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-family: sans-serif; }
+    #chatbot-toggle { width: 60px; height: 60px; border-radius: 50%; background: #007bff; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.2s; }
+    #chatbot-toggle:hover { transform: scale(1.1); }
+    #chatbot-window { width: 320px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: absolute; bottom: 70px; right: 0; }
+    #chatbot-window.hidden { display: none; }
+    .chat-header { background: #007bff; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+    .close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+    #chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f8f9fa; display: flex; flex-direction: column; gap: 10px; }
+    .message { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+    .message.bot { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+    .message.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .chat-options { padding: 10px; background: white; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+    .chat-options button { padding: 8px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .chat-options button:hover { background: #007bff; color: white; }
+</style>
+
+<script>
+    let currentStep = 0;
+    let chatData = {};
+
+    function toggleChatbot() {
+        document.getElementById('chatbot-window').classList.toggle('hidden');
+        if (!document.getElementById('chatbot-window').classList.contains('hidden') && currentStep === 0) {
+            showOptions(['Head / Migraine', 'Chest / Breathing', 'Stomach / Digestion', 'Bones / Joints', 'Skin / Allergy']);
+        }
+    }
+
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}`;
+        msgDiv.innerText = text;
+        document.getElementById('chat-messages').appendChild(msgDiv);
+        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+    }
+
+    function showOptions(options) {
+        const optionsDiv = document.getElementById('chat-options');
+        optionsDiv.innerHTML = '';
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.onclick = () => handleUserInput(opt);
+            optionsDiv.appendChild(btn);
+        });
+    }
+
+    function handleUserInput(input) {
+        appendMessage(input, 'user');
+        document.getElementById('chat-options').innerHTML = '<i style="color:#888; font-size:12px;">Bot is typing...</i>';
+
+        fetch('/api/chatbot', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ step: currentStep, input: input, ...chatData })
+        })
+        .then(res => res.json())
+        .then(data => {
+            setTimeout(() => {
+                appendMessage(data.message, 'bot');
+                currentStep = data.step;
+                chatData = data; // Store department info for next steps
+                
+                if (data.redirect) {
+                    setTimeout(() => window.location.href = data.redirect, 1500);
+                } else if (data.options) {
+                    showOptions(data.options);
+                }
+            }, 600);
+        });
+    }
+</script>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

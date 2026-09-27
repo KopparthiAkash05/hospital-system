@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Register - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-user-plus"></i>
+            <h2>Create Account</h2>
+            <p>Join MediCare Hospital today</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+            <div class="form-group">
+                <label for="name"><i class="fas fa-user"></i> Full Name</label>
+                <input type="text" name="name" id="name" required placeholder="Enter your full name">
+            </div>
+            
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" name="email" id="email" required placeholder="Enter your email">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone</label>
+                    <input type="tel" name="phone" id="phone" required placeholder="Enter phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="age"><i class="fas fa-birthday-cake"></i> Age</label>
+                    <input type="number" name="age" id="age" required placeholder="Age">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender"><i class="fas fa-venus-mars"></i> Gender</label>
+                <select name="gender" id="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <!-- Add this after the gender field in register.html -->
+<div class="form-group">
+    <label for="address"><i class="fas fa-home"></i> Address</label>
+    <textarea name="address" id="address" rows="2" placeholder="Enter your full address"></textarea>
+</div>
+            
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" name="password" id="password" required placeholder="Create password">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-user-plus"></i> Register
+            </button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

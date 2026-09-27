@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Nearby Doctors{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-map-marker-alt"></i> Nearby Doctors</h1>
+        <p>Find doctors near your location</p>
+    </div>
+    
+    <!-- Location Update Form -->
+    <div class="location-card">
+        <h3><i class="fas fa-location-arrow"></i> Update Your Location</h3>
+        <form method="POST" action="{{ url_for('update_location') }}" class="location-form">
+            <div class="form-group">
+                <label for="address"><i class="fas fa-home"></i> Your Address</label>
+                <textarea name="address" id="address" rows="2" placeholder="Enter your full address">{{ patient.address if patient and patient.address else '' }}</textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="latitude"><i class="fas fa-map-pin"></i> Latitude</label>
+                    <input type="text" name="latitude" id="latitude" placeholder="e.g., 40.7128" required>
+                </div>
+                <div class="form-group">
+                    <label for="longitude"><i class="fas fa-map-pin"></i> Longitude</label>
+                    <input type="text" name="longitude" id="longitude" placeholder="e.g., -74.0060" required>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-secondary" onclick="getCurrentLocation()">
+                <i class="fas fa-crosshairs"></i> Use Current Location
+            </button>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Location
+            </button>
+        </form>
+    </div>
+    
+    <!-- Doctors List -->
+    <div class="doctors-list">
+        <h2><i class="fas fa-user-md"></i> Doctors Near You</h2>
+        
+        {% if doctors %}
+        <div class="doctors-grid">
+            {% for doctor in doctors %}
+            <div class="doctor-card">
+                <div class="doctor-avatar">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="doctor-info">
+                    <h3>Dr. {{ doctor.name }}</h3>
+                    <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                    <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                    {% if doctor.city %}
+                    <p><i class="fas fa-city"></i> {{ doctor.city }}</p>
+                    {% endif %}
+                    {% if doctor.distance %}
+                    <p class="distance"><i class="fas fa-route"></i> {{ doctor.distance }} km away</p>
+                    {% endif %}
+                </div>
+                <div class="doctor-actions">
+                    <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
+                        <i class="fas fa-calendar-plus"></i> Book Appointment
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <p>No doctors with location data found</p>
+            <p class="text-muted">Ask doctors to update their location in their profile</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.location-card {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.location-card h3 {
+    margin-bottom: 1.5rem;
+    color: var(--gray-800);
+}
+
+.location-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.location-form textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.distance {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.doctors-list {
+    margin-top: 2rem;
+}
+
+.doctors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+}
+</style>
+
+<script>
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                flashMessage('Location detected!', 'success');
+            },
+            function(error) {
+                flashMessage('Unable to retrieve your location. Please enter manually.', 'danger');
+            }
+        );
+    } else {
+        flashMessage('Geolocation is not supported by your browser.', 'warning');
+    }
+}
+
+function flashMessage(message, type) {
+    // Create flash message element
+    const flashDiv = document.createElement('div');
+    flashDiv.className = `alert alert-${type} alert-dismissible`;
+    flashDiv.innerHTML = `${message}<button class="close-btn" onclick="this.parentElement.remove()">&times;</button>`;
+    
+    // Insert at top of page
+    const container = document.querySelector('.container');
+    container.insertBefore(flashDiv, container.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (flashDiv.parentElement) {
+            flashDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

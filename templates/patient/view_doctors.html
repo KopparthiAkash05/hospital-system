@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Find Doctors{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user-md"></i> Find Doctors</h1>
+        <p>Search and book appointments with expert doctors</p>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="GET" action="{{ url_for('view_doctors') }}" class="filter-form">
+            <div class="form-group">
+                <label for="specialization">Filter by Specialization:</label>
+                <select name="specialization" id="specialization" onchange="this.form.submit()">
+                    <option value="">All Specializations</option>
+                    {% for spec in specializations %}
+                    <option value="{{ spec }}" {% if request.args.get('specialization') == spec %}selected{% endif %}>
+                        {{ spec }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Doctors Grid -->
+    <div class="doctors-grid">
+        {% for doctor in doctors %}
+        <div class="doctor-card">
+            <div class="doctor-avatar">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <div class="doctor-info">
+                <h3>Dr. {{ doctor.name }}</h3>
+                <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                <p><i class="fas fa-envelope"></i> {{ doctor.email }}</p>
+                <p><i class="fas fa-phone"></i> {{ doctor.phone }}</p>
+                <p><i class="fas fa-clock"></i> {{ doctor.available_slots }}</p>
+            </div>
+            <div class="doctor-actions">
+                <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
+                    <i class="fas fa-calendar-plus"></i> Book Appointment
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <p>No doctors found</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

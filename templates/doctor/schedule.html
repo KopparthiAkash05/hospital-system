@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Schedule{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-calendar-alt"></i>
+            <h2>Manage Your Schedule</h2>
+            <p>Update your available time slots</p>
+        </div>
+        
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="available_slots"><i class="fas fa-clock"></i> Available Slots</label>
+                <textarea name="available_slots" id="available_slots" rows="4" required 
+                          placeholder="e.g., Mon-Fri: 9AM-5PM, Sat: 10AM-2PM">{{ doctor.available_slots }}</textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Update Schedule
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
