@@ -559,25 +559,11 @@ def forgot_password():
                 # Generate reset link
                 reset_url = url_for('reset_password', token=token, _external=True)
 
-                # ========== SEND EMAIL VIA RESEND ==========
+                # ========== SEND EMAIL VIA GMAIL SMTP ==========
                 email_sent = False
+
                 try:
-                    import resend
-
-                    api_key = os.environ.get('RESEND_API_KEY')
-                    from_email = os.environ.get('EMAIL_FROM', 'onboarding@resend.dev')
-
-                    if not api_key:
-                        print("⚠️ RESEND_API_KEY not set in environment variables")
-                        raise Exception("Resend API key not configured")
-
-                    resend.api_key = api_key
-
-                    params = {
-                        "from": from_email,
-                        "to": [email],
-                        "subject": "MediCare Hospital: Password reset link",
-                        "text": f'''Hello {user.get('name', 'User')},
+                    email_body = f'''Hello {user.get('name', 'User')},
 
 You have requested to reset your password. Click the link below to set a new password:
 
@@ -587,20 +573,21 @@ This link will expire in 1 hour. If you did not make this request, please ignore
 
 Best regards,
 MediCare Hospital Team'''
-                    }
 
-                    response = resend.Emails.send(params)
-
-                    print(f"✅ Resend email sent! Response: {response}")
-                    email_sent = True
-
-                    flash(
-                        'Password reset link sent to your email! Please check your inbox and spam folder.',
-                        'success'
+                    email_sent = send_email_via_sendgrid(
+                        email,
+                        "MediCare Hospital: Password reset link",
+                        email_body
                     )
 
+                    if email_sent:
+                        flash(
+                            'Password reset link sent to your email! Please check your inbox and spam folder.',
+                            'success'
+                        )
+
                 except Exception as email_err:
-                    print(f"❌ Resend error: {email_err}")
+                    print(f"❌ Gmail email error: {email_err}")
                     email_sent = False
 
                 # If email failed, show link on screen
@@ -610,8 +597,8 @@ MediCare Hospital Team'''
                             <strong style="color:#856404;">⚠️ Email could not be sent. Use the link below:</strong><br><br>
                             <b>Reset Link:</b> <a href="{reset_url}" target="_blank" style="color:#007bff; text-decoration:underline;">{reset_url}</a><br><br>
                             <small style="color:#856404;">
-                                <i>Note: Email sending failed. This could be due to missing Resend configuration.</i><br>
-                                <b>Required:</b> Set RESEND_API_KEY and EMAIL_FROM in Render Environment Variables.
+                                <i>Email sending failed. Please check the Gmail SMTP configuration.</i><br>
+                                <b>Required:</b> Set EMAIL_ADDRESS and EMAIL_PASSWORD in Render Environment Variables.
                             </small>
                         </div>
                     '''), 'warning')
@@ -629,7 +616,6 @@ MediCare Hospital Team'''
         return redirect(url_for('forgot_password'))
 
     return render_template('forgot_password.html')
-
                 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
@@ -1522,35 +1508,37 @@ def get_server_time_with_offset():
 
 
 def send_email_via_sendgrid(to_email, subject, body):
-    """Helper function to send email using Resend API."""
+    """Helper function to send email using Gmail SMTP."""
     try:
-        import resend
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
 
-        api_key = os.environ.get('RESEND_API_KEY')
-        from_email = os.environ.get('EMAIL_FROM', 'onboarding@resend.dev')
+        email_address = os.environ.get('EMAIL_ADDRESS')
+        email_password = os.environ.get('EMAIL_PASSWORD')
 
-        if not api_key:
-            print("❌ RESEND_API_KEY not set in environment variables!")
+        if not email_address or not email_password:
+            print("❌ EMAIL_ADDRESS or EMAIL_PASSWORD not set in environment variables!")
             return False
 
-        resend.api_key = api_key
+        message = MIMEMultipart()
+        message['From'] = email_address
+        message['To'] = to_email
+        message['Subject'] = subject
 
-        params = {
-            "from": from_email,
-            "to": [to_email],
-            "subject": subject,
-            "text": body
-        }
+        message.attach(MIMEText(body, 'plain'))
 
-        response = resend.Emails.send(params)
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(email_address, email_password)
+            server.send_message(message)
 
-        print(f"✅ Resend email sent to {to_email}! Response: {response}")
+        print(f"✅ Gmail email sent to {to_email}!")
         return True
 
     except Exception as e:
-        print(f"❌ Resend error sending to {to_email}: {e}")
+        print(f"❌ Gmail SMTP error sending to {to_email}: {e}")
         return False
-
 
 def check_and_send_reminders():
     """Checks for appointments 30 minutes from now and sends reminders via SendGrid."""
