@@ -1528,7 +1528,7 @@ def send_email_via_sendgrid(to_email, subject, body):
 
         message.attach(MIMEText(body, 'plain'))
 
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=20) as server:
             server.starttls()
             server.login(email_address, email_password)
             server.send_message(message)
