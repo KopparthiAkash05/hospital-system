@@ -1502,7 +1502,8 @@ TIMEZONE_OFFSET_HOURS = 5.5
 def get_server_time_with_offset():
     """Returns the current time adjusted for your local timezone."""
     from datetime import datetime, timedelta
-    now_utc = datetime.utcnow()
+    from datetime import datetime, timezone
+    now_utc = datetime.now(timezone.utc)
     return now_utc + timedelta(hours=TIMEZONE_OFFSET_HOURS)
 
 
@@ -1561,170 +1562,482 @@ def send_email_via_sendgrid(to_email, subject, body):
         print(f"❌ Brevo email error sending to {to_email}: {e}")
         return False
     
+
 def check_and_send_reminders():
-    """Checks for appointments 30 minutes from now and sends reminders via SendGrid."""
+    """Check for appointments 30 minutes from now and send reminders via Brevo."""
     print("⏰ [SCHEDULER] Running 30-min reminder check...")
-    
+
+    conn = None
+    cursor = None
+
     try:
         import pymysql
-        
+        from datetime import timedelta, time as dt_time
+
         conn = pymysql.connect(
-            host=app.config['MYSQL_HOST'], user=app.config['MYSQL_USER'],
-            password=app.config['MYSQL_PASSWORD'], database=app.config['MYSQL_DB'],
-            cursorclass=MySQLdb.cursors.DictCursor
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor
         )
         cursor = conn.cursor()
 
-        # Calculate target time (30 mins from now, adjusted for timezone)
+        # Calculate the target time using the application's timezone.
         now_local = get_server_time_with_offset()
         target_time = now_local + timedelta(minutes=30)
-        
+
         target_time_str = target_time.strftime('%H:%M:%S')
-        target_date_str = now_local.strftime('%Y-%m-%d')
+        target_date_str = target_time.strftime('%Y-%m-%d')
 
-        print(f"⏰ Looking for appointments on {target_date_str} at {target_time_str}")
+        print(
+            f"⏰ Looking for appointments on {target_date_str} "
+            f"at {target_time_str}"
+        )
 
-        # Query: Find approved appointments at the exact time
-        cursor.execute('''
-            SELECT a.*, p.name as patient_name, p.email as patient_email, d.name as doctor_name
+        # Find approved appointments approximately 30 minutes away.
+        # The scheduler should run every minute.
+        window_end = target_time + timedelta(minutes=1)
+
+        cursor.execute("""
+            SELECT
+                a.*,
+                p.name AS patient_name,
+                p.email AS patient_email,
+                d.name AS doctor_name
             FROM Appointment a
             JOIN Patient p ON a.patient_id = p.patient_id
             JOIN Doctor d ON a.doctor_id = d.doctor_id
-            WHERE a.date = %s AND a.time = %s 
-            AND a.status = 'Approved' AND a.reminder_sent = 0
-        ''', (target_date_str, target_time_str))
-        
+            WHERE a.date = %s
+              AND a.time >= %s
+              AND a.time < %s
+              AND a.status = 'Approved'
+              AND a.reminder_sent = 0
+        """, (
+            target_time.strftime('%Y-%m-%d'),
+            target_time.strftime('%H:%M:%S'),
+            window_end.strftime('%H:%M:%S')
+        ))
+
         appointments = cursor.fetchall()
         print(f"✅ Found {len(appointments)} appointments to remind.")
 
         for appt in appointments:
-            print(f"📧 Sending 30-min reminder to {appt['patient_email']}...")
-            
-            # Format time to 12-hour format for the email
-            try:
-                time_obj = appt['time']
-                if isinstance(time_obj, timedelta):
-                    total_seconds = int(time_obj.total_seconds())
-                    hours = total_seconds // 3600
-                    minutes = (total_seconds % 3600) // 60
-                    from datetime import time as dt_time
-                    time_obj = dt_time(hours, minutes)
-                    time_str = time_obj.strftime('%I:%M %p')
-                elif isinstance(time_obj, str):
-                    time_parts = time_obj.split(':')
-                    hour = int(time_parts[0])
-                    minute = time_parts[1] if len(time_parts) > 1 else '00'
-                    am_pm = "AM" if hour < 12 else "PM"
-                    hour_12 = hour % 12
-                    if hour_12 == 0:
-                        hour_12 = 12
-                    time_str = f"{hour_12}:{minute} {am_pm}"
-                else:
-                    time_str = str(time_obj)
-            except:
-                time_str = str(appt['time'])
-            
-            subject = f"MediCare Hospital Appointment Reminder: Dr. {appt['doctor_name']} in 30 minutes"
+            patient_email = appt.get('patient_email')
+
+            if not patient_email:
+                print(
+                    f"⚠️ No email found for appointment "
+                    f"{appt['appointment_id']}. Skipping."
+                )
+                continue
+
+            # Format the appointment time for the email.
+            appointment_time = appt['time']
+
+            if isinstance(appointment_time, timedelta):
+                total_seconds = int(appointment_time.total_seconds())
+                hours = (total_seconds // 3600) % 24
+                minutes = (total_seconds % 3600) // 60
+                time_str = dt_time(hours, minutes).strftime('%I:%M %p')
+            elif isinstance(appointment_time, dt_time):
+                time_str = appointment_time.strftime('%I:%M %p')
+            else:
+                time_parts = str(appointment_time).split(':')
+                hour = int(time_parts[0])
+                minute = int(time_parts[1])
+                time_str = dt_time(hour % 24, minute).strftime('%I:%M %p')
+
+            subject = (
+                f"MediCare Hospital Appointment Reminder: "
+                f"Dr. {appt['doctor_name']} in 30 minutes"
+            )
+
             body = f"""Hello {appt['patient_name']},
 
-This is a reminder that you have an appointment with Dr. {appt['doctor_name']} in 30 minutes.
+This is a reminder that you have an appointment with Dr. {appt['doctor_name']} in approximately 30 minutes.
 
-📅 Date: {appt['date']}
-🕐 Time: {time_str}
+Date: {appt['date']}
+Time: {time_str}
 
 Please arrive on time.
 
-If you need to cancel or reschedule, please contact us immediately.
+If you need to cancel or reschedule, please contact MediCare Hospital.
 
 Best regards,
 MediCare Hospital Team"""
 
-            # Send via SendGrid
-            email_sent = send_email_via_sendgrid(appt['patient_email'], subject, body)
-            
-            if email_sent:
-                # Mark as sent
-                cursor.execute('UPDATE Appointment SET reminder_sent = 1 WHERE appointment_id = %s', (appt['appointment_id'],))
-                conn.commit()
-                print(f"✅ Reminder sent and marked in database!")
-            else:
-                print(f"⚠️ Email failed but will retry next minute.")
+            print(f"📧 Sending appointment reminder to {patient_email}...")
 
-        cursor.close()
-        conn.close()
+            try:
+                # Uses the existing helper, which must call the Brevo API.
+                email_sent = send_email_via_sendgrid(
+                    patient_email, subject, body
+                )
+
+                if email_sent:
+                    cursor.execute("""
+                        UPDATE Appointment
+                        SET reminder_sent = 1
+                        WHERE appointment_id = %s
+                          AND reminder_sent = 0
+                    """, (appt['appointment_id'],))
+
+                    conn.commit()
+                    print(
+                        f"✅ Reminder accepted by the email service "
+                        f"and marked for appointment "
+                        f"{appt['appointment_id']}."
+                    )
+                else:
+                    print(
+                        f"⚠️ Email failed for {patient_email}; "
+                        "it can be retried on the next scheduler run."
+                    )
+
+            except Exception as email_error:
+                conn.rollback()
+                print(
+                    f"❌ Error processing reminder for {patient_email}: "
+                    f"{email_error}"
+                )
+
     except Exception as e:
         print(f"❌ CRITICAL ERROR in 30-min scheduler: {e}")
         import traceback
         traceback.print_exc()
 
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 
 def send_follow_up_reminder():
-    """Send email reminders 1 day before a scheduled follow-up via SendGrid."""
+    """Send email reminders one day before scheduled follow-ups via Brevo."""
     print("⏰ [SCHEDULER] Running follow-up reminder check...")
-    
+
+    conn = None
+    cursor = None
+
     try:
         import pymysql
-        
+        from datetime import timedelta
+
         conn = pymysql.connect(
-            host=app.config['MYSQL_HOST'], user=app.config['MYSQL_USER'],
-            password=app.config['MYSQL_PASSWORD'], database=app.config['MYSQL_DB'],
-            cursorclass=MySQLdb.cursors.DictCursor
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor
         )
         cursor = conn.cursor()
 
-        # Calculate tomorrow's date (adjusted for timezone)
+        # Calculate tomorrow's date using the application's timezone.
         tomorrow_local = get_server_time_with_offset() + timedelta(days=1)
         tomorrow_date_str = tomorrow_local.strftime('%Y-%m-%d')
 
-        print(f"⏰ Looking for follow-ups scheduled for tomorrow: {tomorrow_date_str}")
+        print(
+            f"⏰ Looking for follow-ups scheduled for tomorrow: "
+            f"{tomorrow_date_str}"
+        )
 
-        cursor.execute('''
-            SELECT a.*, p.name as patient_name, p.email as patient_email, d.name as doctor_name
+        cursor.execute("""
+            SELECT
+                a.*,
+                p.name AS patient_name,
+                p.email AS patient_email,
+                d.name AS doctor_name
             FROM Appointment a
             JOIN Patient p ON a.patient_id = p.patient_id
             JOIN Doctor d ON a.doctor_id = d.doctor_id
-            WHERE a.follow_up_date = %s AND a.status = 'Completed' AND a.follow_up_reminder_sent = 0
-        ''', (tomorrow_date_str,))
-        
+            WHERE a.follow_up_date = %s
+              AND a.status = 'Completed'
+              AND a.follow_up_reminder_sent = 0
+        """, (tomorrow_date_str,))
+
         appointments = cursor.fetchall()
-        print(f"✅ Found {len(appointments)} follow-up reminders to send.")
+        print(f"✅ Found {len(appointments)} follow-up reminders.")
 
         for appt in appointments:
-            print(f"📧 Sending follow-up reminder to {appt['patient_email']}...")
-            
-            subject = f"MediCare Hospital Follow-up Reminder: Dr. {appt['doctor_name']} - Tomorrow"
+            patient_email = appt.get('patient_email')
+
+            if not patient_email:
+                print(
+                    f"⚠️ No email found for appointment "
+                    f"{appt['appointment_id']}. Skipping."
+                )
+                continue
+
+            subject = (
+                f"MediCare Hospital Follow-up Reminder: "
+                f"Dr. {appt['doctor_name']} - Tomorrow"
+            )
+
             body = f"""Hello {appt['patient_name']},
 
-This is a reminder that you have a scheduled follow-up checkup with Dr. {appt['doctor_name']} TOMORROW.
+This is a reminder that you have a scheduled follow-up checkup
+with Dr. {appt['doctor_name']} tomorrow.
 
-📅 Date: {appt['follow_up_date']}
-👨‍⚕️ Doctor: Dr. {appt['doctor_name']}
+Date: {appt['follow_up_date']}
+Doctor: Dr. {appt['doctor_name']}
 
-Please ensure you visit the clinic for your condition check-up.
-
-If you need to reschedule, please contact us immediately.
+If you need to reschedule, please contact MediCare Hospital.
 
 Best regards,
 MediCare Hospital Team"""
 
-            # Send via SendGrid
-            email_sent = send_email_via_sendgrid(appt['patient_email'], subject, body)
-            
-            if email_sent:
-                # Mark as sent
-                cursor.execute('UPDATE Appointment SET follow_up_reminder_sent = 1 WHERE appointment_id = %s', (appt['appointment_id'],))
-                conn.commit()
-                print(f"✅ Follow-up reminder sent and marked!")
-            else:
-                print(f"⚠️ Follow-up email failed but will retry next run.")
+            print(f"📧 Sending follow-up reminder to {patient_email}...")
 
-        cursor.close()
-        conn.close()
+            try:
+                # This helper must use the Brevo HTTPS API.
+                email_sent = send_email_via_sendgrid(
+                    patient_email, subject, body
+                )
+
+                if email_sent:
+                    cursor.execute("""
+                        UPDATE Appointment
+                        SET follow_up_reminder_sent = 1
+                        WHERE appointment_id = %s
+                          AND follow_up_reminder_sent = 0
+                    """, (appt['appointment_id'],))
+
+                    conn.commit()
+                    print(
+                        f"✅ Reminder sent and marked for appointment "
+                        f"{appt['appointment_id']}."
+                    )
+                else:
+                    print(
+                        f"⚠️ Email failed for {patient_email}. "
+                        "It can be retried on the next scheduler run."
+                    )
+
+            except Exception as email_error:
+                conn.rollback()
+                print(
+                    f"❌ Error processing reminder for {patient_email}: "
+                    f"{email_error}"
+                )
+
     except Exception as e:
         print(f"❌ CRITICAL ERROR in follow-up scheduler: {e}")
         import traceback
         traceback.print_exc()
 
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def send_appointment_accepted_email(appointment_id):
+    """Send an appointment confirmation email when a doctor accepts."""
+
+    conn = None
+    cursor = None
+
+    try:
+        import pymysql
+
+        conn = pymysql.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                a.appointment_id,
+                a.date,
+                a.time,
+                p.name AS patient_name,
+                p.email AS patient_email,
+                d.name AS doctor_name
+            FROM Appointment a
+            JOIN Patient p ON a.patient_id = p.patient_id
+            JOIN Doctor d ON a.doctor_id = d.doctor_id
+            WHERE a.appointment_id = %s
+              AND a.status = 'Approved'
+        """, (appointment_id,))
+
+        appt = cursor.fetchone()
+
+        if not appt:
+            print(
+                f"⚠️ Approved appointment {appointment_id} "
+                "not found."
+            )
+            return False
+
+        if not appt.get('patient_email'):
+            print("⚠️ Patient email address is missing.")
+            return False
+
+        appointment_date = appt['date']
+        appointment_time = appt['time']
+
+        if hasattr(appointment_date, 'strftime'):
+            appointment_date = appointment_date.strftime('%d-%m-%Y')
+
+        if hasattr(appointment_time, 'strftime'):
+            appointment_time = appointment_time.strftime('%I:%M %p')
+        else:
+            appointment_time = str(appointment_time)
+
+        subject = "MediCare Hospital - Appointment Confirmed"
+
+        body = f"""Hello {appt['patient_name']},
+
+Good news! Your appointment has been accepted by the doctor.
+
+Doctor: Dr. {appt['doctor_name']}
+Appointment Date: {appointment_date}
+Appointment Time: {appointment_time}
+
+Please arrive at MediCare Hospital on time for your scheduled appointment.
+
+If you need to reschedule, please contact the hospital.
+
+Thank you for choosing MediCare Hospital.
+
+Best regards,
+MediCare Hospital Team"""
+
+        email_sent = send_email_via_sendgrid(
+            appt['patient_email'],
+            subject,
+            body
+        )
+
+        if email_sent:
+            print(
+                f"✅ Appointment confirmation email accepted "
+                f"for {appt['patient_email']}."
+            )
+            return True
+
+        print("⚠️ Failed to send appointment confirmation email.")
+        return False
+
+    except Exception as e:
+        print(f"❌ Appointment confirmation error: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+
+def send_appointment_cancelled_email(appointment_id):
+    """Send an email notification when an appointment is cancelled."""
+
+    conn = None
+    cursor = None
+
+    try:
+        import pymysql
+
+        conn = pymysql.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                a.appointment_id,
+                a.date,
+                a.time,
+                p.name AS patient_name,
+                p.email AS patient_email,
+                d.name AS doctor_name
+            FROM Appointment a
+            JOIN Patient p ON a.patient_id = p.patient_id
+            JOIN Doctor d ON a.doctor_id = d.doctor_id
+            WHERE a.appointment_id = %s
+              AND a.status = 'Cancelled'
+        """, (appointment_id,))
+
+        appt = cursor.fetchone()
+
+        if not appt:
+            print(
+                f"⚠️ Cancelled appointment {appointment_id} "
+                "not found."
+            )
+            return False
+
+        if not appt.get('patient_email'):
+            print("⚠️ Patient email address is missing.")
+            return False
+
+        appointment_date = appt['date']
+        appointment_time = appt['time']
+
+        if hasattr(appointment_date, 'strftime'):
+            appointment_date = appointment_date.strftime('%d-%m-%Y')
+
+        if hasattr(appointment_time, 'strftime'):
+            appointment_time = appointment_time.strftime('%I:%M %p')
+        else:
+            appointment_time = str(appointment_time)
+
+        subject = "MediCare Hospital - Appointment Cancelled"
+
+        body = f"""Hello {appt['patient_name']},
+
+Your appointment at MediCare Hospital has been cancelled.
+
+Doctor: Dr. {appt['doctor_name']}
+Appointment Date: {appointment_date}
+Appointment Time: {appointment_time}
+
+You can book another appointment on a different day through
+the MediCare Hospital appointment system.
+
+We apologize for any inconvenience and look forward to assisting you.
+
+Best regards,
+MediCare Hospital Team"""
+
+        email_sent = send_email_via_sendgrid(
+            appt['patient_email'],
+            subject,
+            body
+        )
+
+        if email_sent:
+            print(
+                f"✅ Cancellation email accepted "
+                f"for {appt['patient_email']}."
+            )
+            return True
+
+        print("⚠️ Failed to send appointment cancellation email.")
+        return False
+
+    except Exception as e:
+        print(f"❌ Appointment cancellation email error: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 # ==========================================
 # SCHEDULER SETUP
 # ==========================================
