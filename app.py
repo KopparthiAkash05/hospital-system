@@ -72,8 +72,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'akashkopparthi@gm
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'bgxkfhkwadntjkvr')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', 'akashkopparthi@gmail.com')
 app.config['MAIL_TIMEOUT'] = 10  # Add this - 10 second timeout
-app.config['EMAIL_FROM'] = os.environ.get('EMAIL_FROM','onboarding@resend.dev')
-app.config['RESEND_API_KEY'] = os.environ.get('RESEND_API_KEY')
+
 
 mail = Mail(app)
 scheduler = BackgroundScheduler()
@@ -1508,38 +1507,60 @@ def get_server_time_with_offset():
 
 
 def send_email_via_sendgrid(to_email, subject, body):
-    """Helper function to send email using Gmail SMTP."""
+    """Helper function to send email using Brevo HTTP API."""
     try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+        import requests
 
-        email_address = os.environ.get('EMAIL_ADDRESS')
-        email_password = os.environ.get('EMAIL_PASSWORD')
+        api_key = os.environ.get('BREVO_API_KEY')
+        from_email = os.environ.get('EMAIL_FROM')
 
-        if not email_address or not email_password:
-            print("❌ EMAIL_ADDRESS or EMAIL_PASSWORD not set in environment variables!")
+        if not api_key or not from_email:
+            print("❌ BREVO_API_KEY or EMAIL_FROM not set in environment variables!")
             return False
 
-        message = MIMEMultipart()
-        message['From'] = email_address
-        message['To'] = to_email
-        message['Subject'] = subject
+        url = "https://api.brevo.com/v3/smtp/email"
 
-        message.attach(MIMEText(body, 'plain'))
+        headers = {
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json"
+        }
 
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=20) as server:
-            server.starttls()
-            server.login(email_address, email_password)
-            server.send_message(message)
+        payload = {
+            "sender": {
+                "name": "MediCare Hospital",
+                "email": from_email
+            },
+            "to": [
+                {
+                    "email": to_email
+                }
+            ],
+            "subject": subject,
+            "textContent": body
+        }
 
-        print(f"✅ Gmail email sent to {to_email}!")
-        return True
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=20
+        )
 
-    except Exception as e:
-        print(f"❌ Gmail SMTP error sending to {to_email}: {e}")
+        if response.status_code in (200, 201):
+            print(f"✅ Brevo accepted email for {to_email}.")
+            return True
+
+        print(
+            f"❌ Brevo API error: "
+            f"{response.status_code} - {response.text}"
+        )
         return False
 
+    except Exception as e:
+        print(f"❌ Brevo email error sending to {to_email}: {e}")
+        return False
+    
 def check_and_send_reminders():
     """Checks for appointments 30 minutes from now and sends reminders via SendGrid."""
     print("⏰ [SCHEDULER] Running 30-min reminder check...")
