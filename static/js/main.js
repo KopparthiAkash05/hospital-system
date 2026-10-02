@@ -70,3 +70,46 @@ document.querySelectorAll('.nav-menu a').forEach(link => {
         link.classList.add('active');
     }
 });
+
+// Light / dark theme toggle
+const THEME_KEY = 'medicare-theme';
+const themeToggle = document.getElementById('themeToggle');
+
+function syncThemeToggle(theme) {
+    if (!themeToggle) return;
+    const nextLabel = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    themeToggle.setAttribute('aria-label', nextLabel);
+    themeToggle.setAttribute('title', nextLabel);
+    themeToggle.setAttribute('aria-pressed', String(theme === 'dark'));
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    syncThemeToggle(theme);
+    try {
+        localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+        // Storage unavailable (private mode / disabled cookies) — theme still applies.
+    }
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } }));
+}
+
+if (themeToggle) {
+    syncThemeToggle(document.documentElement.getAttribute('data-theme') || 'light');
+    themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+}
+
+// Follow the OS preference until the visitor picks a theme explicitly.
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+    let stored = null;
+    try {
+        stored = localStorage.getItem(THEME_KEY);
+    } catch (e) {
+        stored = null;
+    }
+    if (stored === 'dark' || stored === 'light') return;
+    applyTheme(event.matches ? 'dark' : 'light');
+});

@@ -6,21 +6,43 @@
     <title>{% block title %}MediCare Hospital{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <script>
+        // Applied before first paint so the stored theme never flashes.
+        (function () {
+            try {
+                var stored = localStorage.getItem('medicare-theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-            <div class="nav-brand">
-                <i class="fas fa-hospital-alt"></i>
-                <span>MediCare Hospital</span>
+            <div class="nav-leading">
+                <div class="nav-brand">
+                    <i class="fas fa-hospital-alt"></i>
+                    <span>MediCare Hospital</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+                    <i class="fas fa-moon theme-icon-moon" aria-hidden="true"></i>
+                    <i class="fas fa-sun theme-icon-sun" aria-hidden="true"></i>
+                </button>
             </div>
             
-            <div class="nav-toggle" id="navToggle">
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-controls="navMenu">
                 <span></span>
                 <span></span>
                 <span></span>
-            </div>
+            </button>
             
             <ul class="nav-menu" id="navMenu">
                 {% if session.get('loggedin') %}
@@ -64,11 +86,11 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="container">
+            <div class="container" aria-live="polite">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible">
+                    <div class="alert alert-{{ category }} alert-dismissible" role="alert">
                         {{ message }}
-                        <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+                        <button class="close-btn" type="button" aria-label="Dismiss notification" onclick="this.parentElement.remove()">&times;</button>
                     </div>
                 {% endfor %}
             </div>
@@ -110,17 +132,17 @@
     <!-- Smart Triage Chatbot UI -->
 <div id="chatbot-container">
     <!-- Floating Button -->
-    <button id="chatbot-toggle" onclick="toggleChatbot()">
-        <i class="fas fa-comments"></i>
+    <button id="chatbot-toggle" type="button" aria-label="Open MediCare triage assistant" aria-controls="chatbot-window" onclick="toggleChatbot()">
+        <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
 
     <!-- Chat Window -->
-    <div id="chatbot-window" class="hidden">
+    <div id="chatbot-window" class="hidden" role="dialog" aria-label="MediCare Triage Bot">
         <div class="chat-header">
-            <span><i class="fas fa-robot"></i> MediCare Triage Bot</span>
-            <button onclick="toggleChatbot()" class="close-btn">&times;</button>
+            <span><i class="fas fa-robot" aria-hidden="true"></i> MediCare Triage Bot</span>
+            <button onclick="toggleChatbot()" class="close-btn" type="button" aria-label="Close triage assistant">&times;</button>
         </div>
-        <div id="chat-messages">
+        <div id="chat-messages" aria-live="polite" aria-atomic="false">
             <div class="message bot">
                 Hello! I'm your MediCare assistant. Where does it hurt today?
             </div>
@@ -130,23 +152,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    #chatbot-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-family: sans-serif; }
-    #chatbot-toggle { width: 60px; height: 60px; border-radius: 50%; background: #007bff; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.2s; }
-    #chatbot-toggle:hover { transform: scale(1.1); }
-    #chatbot-window { width: 320px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: absolute; bottom: 70px; right: 0; }
-    #chatbot-window.hidden { display: none; }
-    .chat-header { background: #007bff; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-    .close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
-    #chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f8f9fa; display: flex; flex-direction: column; gap: 10px; }
-    .message { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
-    .message.bot { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-    .message.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .chat-options { padding: 10px; background: white; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
-    .chat-options button { padding: 8px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-    .chat-options button:hover { background: #007bff; color: white; }
-</style>
 
 <script>
     let currentStep = 0;
@@ -180,7 +185,7 @@
 
     function handleUserInput(input) {
         appendMessage(input, 'user');
-        document.getElementById('chat-options').innerHTML = '<i style="color:#888; font-size:12px;">Bot is typing...</i>';
+        document.getElementById('chat-options').innerHTML = '<i class="chat-typing">Bot is typing...</i>';
 
         fetch('/api/chatbot', {
             method: 'POST',

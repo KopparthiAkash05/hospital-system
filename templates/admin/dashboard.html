@@ -6,63 +6,69 @@
 <!-- Add Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="container" style="padding: 20px; max-width: 1200px; margin: auto;">
-    <h2 style="margin-bottom: 30px; color: #333;"><i class="fas fa-chart-line"></i> Hospital Analytics Dashboard</h2>
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-chart-line"></i> Hospital Analytics Dashboard</h1>
+        <p>Appointments, revenue and department activity across the hospital</p>
+    </div>
 
     <!-- Summary Cards -->
-    <div style="display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 250px; background: #007bff; color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div class="admin-metrics">
+        <div class="metric-card metric-card--accent">
             <h3>Total Appointments</h3>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0;">{{ total_appointments }}</p>
+            <p class="metric-value">{{ total_appointments }}</p>
         </div>
-        <div style="flex: 1; min-width: 250px; background: #28a745; color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div class="metric-card metric-card--success">
             <h3>Estimated Revenue</h3>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0;">₹{{ revenue }}</p>
-            <small style="opacity: 0.8;">(Based on ₹500 per completed visit)</small>
+            <p class="metric-value">₹{{ revenue }}</p>
+            <small class="metric-note">(Based on ₹500 per completed visit)</small>
         </div>
     </div>
 
     <!-- Charts Section -->
-    <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 40px;">
+    <div class="chart-grid">
         <!-- Pie Chart: Departments -->
-        <div style="flex: 1; min-width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-            <h4 style="text-align: center; margin-bottom: 20px;">Appointments by Department</h4>
-            <canvas id="deptChart"></canvas>
+        <div class="panel">
+            <h4 class="panel-title">Appointments by Department</h4>
+            <canvas id="deptChart" height="260" role="img" aria-label="Doughnut chart of appointments by department"></canvas>
         </div>
 
         <!-- Bar Chart: Monthly Growth -->
-        <div style="flex: 1; min-width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-            <h4 style="text-align: center; margin-bottom: 20px;">Monthly Patient Growth</h4>
-            <canvas id="growthChart"></canvas>
+        <div class="panel">
+            <h4 class="panel-title">Monthly Patient Growth</h4>
+            <canvas id="growthChart" height="260" role="img" aria-label="Bar chart of monthly patient growth"></canvas>
         </div>
     </div>
 
     <!-- Top Doctors Table -->
-    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-        <h4 style="margin-bottom: 20px;">Top 5 Busiest Doctors</h4>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f8f9fa; text-align: left;">
-                    <th style="padding: 12px; border-bottom: 2px solid #ddd;">Doctor Name</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #ddd;">Total Appointments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doctor in top_doctors %}
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ doctor.name }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ doctor.count }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="panel">
+        <h4 class="panel-title panel-title--left">Top 5 Busiest Doctors</h4>
+        <div class="appointments-table appointments-table--compact">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Doctor Name</th>
+                        <th>Total Appointments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doctor in top_doctors %}
+                    <tr>
+                        <td>{{ doctor.name }}</td>
+                        <td>{{ doctor.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <!-- 
   FIX FOR IDE ERRORS: 
   We store the Jinja2 data in a hidden JSON script tag. 
-  This prevents HTML/JS validators from throwing errors about {{ }} inside JavaScript.
+  This prevents HTML/JS validators from throwing errors about template expressions inside JavaScript.
+  Note: never write a literal Jinja brace pair in this comment - Jinja would try to evaluate it.
 -->
 <script id="chart-data" type="application/json">
     {
@@ -79,38 +85,91 @@
     const rawData = document.getElementById('chart-data').textContent;
     const chartData = JSON.parse(rawData);
 
-    // 2. Department Pie Chart
-    const deptCtx = document.getElementById('deptChart').getContext('2d');
-    new Chart(deptCtx, {
-        type: 'doughnut',
-        data: {
-            labels: chartData.dept_labels,
-            datasets: [{
-                data: chartData.dept_counts,
-                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14'],
-                borderWidth: 1
-            }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
+// 2. Read live theme tokens so charts re-colour when the toggle is used.
+function cssToken(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+}
 
-    // 3. Monthly Growth Bar Chart
-    const growthCtx = document.getElementById('growthChart').getContext('2d');
-    new Chart(growthCtx, {
-        type: 'bar',
-        data: {
-            labels: chartData.month_labels,
-            datasets: [{
-                label: 'Appointments',
-                data: chartData.month_counts,
-                backgroundColor: '#007bff',
-                borderRadius: 5
-            }]
-        },
-        options: { 
-            responsive: true, 
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } 
+function chartPalette() {
+    return {
+        series: [
+            cssToken('--accent-600', '#2563eb'),
+            cssToken('--success-600', '#059669'),
+            cssToken('--warning-600', '#d97706'),
+            cssToken('--danger-600', '#dc2626'),
+            cssToken('--accent-800', '#1e40af'),
+            cssToken('--info-700', '#0891b2'),
+            cssToken('--accent-400', '#7c3aed')
+        ],
+        sliceBorder: cssToken('--surface', '#ffffff'),
+        label: cssToken('--text-secondary', '#475569'),
+        axis: cssToken('--text-muted', '#64748b'),
+        grid: cssToken('--border', '#e6e9ee'),
+        bar: cssToken('--accent-600', '#2563eb'),
+        barHover: cssToken('--accent-800', '#1d4ed8')
+    };
+}
+
+// 3. Department Pie Chart
+const deptChart = new Chart(document.getElementById('deptChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: chartData.dept_labels,
+        datasets: [{
+            data: chartData.dept_counts,
+            backgroundColor: chartPalette().series,
+            borderWidth: 2,
+            borderColor: chartPalette().sliceBorder
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: chartPalette().label, boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 16 } }
         }
-    });
+    }
+});
+
+// 4. Monthly Growth Bar Chart
+const growthChart = new Chart(document.getElementById('growthChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: chartData.month_labels,
+        datasets: [{
+            label: 'Appointments',
+            data: chartData.month_counts,
+            backgroundColor: chartPalette().bar,
+            hoverBackgroundColor: chartPalette().barHover,
+            borderRadius: 6,
+            maxBarThickness: 36
+        }]
+    },
+    options: { 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, border: { color: chartPalette().grid }, ticks: { color: chartPalette().axis } },
+            y: { beginAtZero: true, ticks: { stepSize: 1, color: chartPalette().axis }, grid: { color: chartPalette().grid }, border: { display: false } }
+        }
+    }
+});
+
+// 5. Repaint charts whenever the light/dark toggle changes the theme.
+window.addEventListener('themechange', function () {
+    var p = chartPalette();
+    deptChart.data.datasets[0].backgroundColor = p.series;
+    deptChart.data.datasets[0].borderColor = p.sliceBorder;
+    deptChart.options.plugins.legend.labels.color = p.label;
+    deptChart.update();
+
+    growthChart.data.datasets[0].backgroundColor = p.bar;
+    growthChart.data.datasets[0].hoverBackgroundColor = p.barHover;
+    growthChart.options.scales.x.ticks.color = p.axis;
+    growthChart.options.scales.x.border.color = p.grid;
+    growthChart.options.scales.y.ticks.color = p.axis;
+    growthChart.options.scales.y.grid.color = p.grid;
+    growthChart.update();
+});
 </script>
 {% endblock %}

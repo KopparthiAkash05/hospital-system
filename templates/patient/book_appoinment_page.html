@@ -60,126 +60,13 @@
                     <i class="fas fa-check"></i> Confirm Booking
                 </button>
                 
-                <a href="{{ url_for('view_doctors') }}" class="btn btn-secondary btn-block" style="margin-top: 1rem;">
+                <a href="{{ url_for('view_doctors') }}" class="btn btn-ghost btn-block">
                     <i class="fas fa-arrow-left"></i> Back to Doctors
                 </a>
             </form>
         </div>
     </div>
 </div>
-
-<style>
-.booking-container {
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.booking-step {
-    background: var(--white);
-    padding: 2rem;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 2rem;
-}
-
-.booking-step h2 {
-    margin-bottom: 1.5rem;
-    color: var(--gray-800);
-}
-
-.doctors-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.doctor-card {
-    border: 2px solid var(--gray-200);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-}
-
-.doctor-card:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-}
-
-.doctor-card.selected {
-    border-color: var(--success-color);
-    background: #f0fdf4;
-}
-
-.doctor-card.selected .select-indicator {
-    display: block;
-}
-
-.select-indicator {
-    display: none;
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    color: var(--success-color);
-    font-size: 2rem;
-}
-
-.selected-doctor-info {
-    background: #dbeafe;
-    padding: 1rem;
-    border-radius: var(--radius);
-    margin-bottom: 1.5rem;
-    border-left: 4px solid var(--primary-color);
-}
-
-.selected-doctor-info h3 {
-    margin: 0;
-    color: var(--primary-color);
-}
-
-.booking-form {
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.booking-form .form-group {
-    margin-bottom: 1.5rem;
-}
-
-.booking-form label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.booking-form input,
-.booking-form select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 2px solid var(--gray-200);
-    border-radius: var(--radius);
-    font-size: 1rem;
-}
-
-.booking-form input:focus,
-.booking-form select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
-.error-message {
-    color: var(--danger-color);
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-    display: none;
-}
-
-.error-message.show {
-    display: block;
-}
-</style>
 
 <script>
 // Set minimum date to today

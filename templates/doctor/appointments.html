@@ -34,18 +34,17 @@
             </td>
             <td>
                 {% if appointment.status != 'Completed' %}
-                <form action="{{ url_for('complete_appointment') }}" method="POST" style="display: flex; gap: 5px; align-items: center;">
+                <form action="{{ url_for('complete_appointment') }}" method="POST">
                     <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
                     
-                    <input type="number" name="follow_up_days" min="0" max="15" value="0" 
-                           style="width: 65px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+                    <input type="number" name="follow_up_days" min="0" max="15" value="0" aria-label="Follow-up days for {{ appointment.patient_name }}">
                     
                     <button type="submit" class="btn btn-success btn-sm">
                         <i class="fas fa-check"></i> Complete
                     </button>
                 </form>
                 {% else %}
-                <span style="color: #28a745;"><i class="fas fa-check-circle"></i> Completed</span>
+                <span class="text-success"><i class="fas fa-check-circle"></i> Completed</span>
                 {% endif %}
             </td>
         </tr>
