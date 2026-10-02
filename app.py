@@ -1175,6 +1175,19 @@ def doctor_appointments():
     
     return render_template('doctor/appointments.html', appointments=appointments)
 
+""" @app.route('/doctor/approve/<int:appointment_id>')
+@doctor_required
+def approve_appointment(appointment_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute(
+        "UPDATE Appointment SET status = 'Approved' WHERE appointment_id = %s AND doctor_id = %s",
+        (appointment_id, session['id'])
+    )
+    mysql.connection.commit()
+    cursor.close()
+    flash('Appointment approved!', 'success')
+    return redirect(url_for('doctor_dashboard')) """
+
 
 @app.route('/doctor/approve/<int:appointment_id>')
 @doctor_required
@@ -1220,6 +1233,41 @@ def approve_appointment(appointment_id):
         )
 
     return redirect(url_for('doctor_dashboard'))
+
+@app.route('/doctor/reject/<int:appointment_id>')
+@doctor_required
+def reject_appointment(appointment_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute(
+        "UPDATE Appointment SET status = 'Rejected' WHERE appointment_id = %s AND doctor_id = %s",
+        (appointment_id, session['id'])
+    )
+    mysql.connection.commit()
+    cursor.close()
+    flash('Appointment rejected!', 'info')
+    return redirect(url_for('doctor_dashboard'))
+
+@app.route('/doctor/schedule', methods=['GET', 'POST'])
+@doctor_required
+def manage_schedule():
+    if request.method == 'POST':
+        available_slots = request.form['available_slots']
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            'UPDATE Doctor SET available_slots = %s WHERE doctor_id = %s',
+            (available_slots, session['id'])
+        )
+        mysql.connection.commit()
+        cursor.close()
+        flash('Schedule updated successfully!', 'success')
+        return redirect(url_for('manage_schedule'))
+    
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM Doctor WHERE doctor_id = %s', (session['id'],))
+    doctor = cursor.fetchone()
+    cursor.close()
+    
+    return render_template('doctor/schedule.html', doctor=doctor)
 
 # ========== ADMIN ROUTES ==========
 @app.route('/admin/dashboard')
