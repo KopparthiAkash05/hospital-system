@@ -1496,13 +1496,12 @@ def symptom_checker():
 # EMAIL REMINDER SYSTEM (SENDGRID VERSION)
 # ==========================================
 
-# ⚠️ IMPORTANT: Change this to 5.5 if you are in India (IST). Keep 0 if using UTC.
-TIMEZONE_OFFSET_HOURS = 5.5
 
+from datetime import datetime, timedelta, timezone
+# India Standard Time (IST): UTC +05:30
+TIMEZONE_OFFSET_HOURS = 5.5
 def get_server_time_with_offset():
-    """Returns the current time adjusted for your local timezone."""
-    from datetime import datetime, timedelta
-    from datetime import datetime, timezone
+    """Return the current time in the configured local timezone."""
     now_utc = datetime.now(timezone.utc)
     return now_utc + timedelta(hours=TIMEZONE_OFFSET_HOURS)
 
