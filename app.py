@@ -1099,40 +1099,96 @@ def doctor_dashboard():
                          search_patient=search_patient,
                          filter_date=filter_date)
 
+
 @app.route('/doctor/complete_appointment', methods=['POST'])
 @doctor_required
 def complete_appointment():
     appointment_id = request.form.get('appointment_id')
-    
-    # Get the days, default to 0 if empty or "-"
+
+    if not appointment_id:
+        flash('Appointment ID is missing.', 'danger')
+        return redirect(url_for('doctor_appointments'))
+
     try:
-        follow_up_days = int(request.form.get('follow_up_days', 0))
-    except ValueError:
+        follow_up_days = int(request.form.get('follow_up_days', 0) or 0)
+    except (ValueError, TypeError):
         follow_up_days = 0
-        
-    cursor = mysql.connection.cursor()
-    
-    # If doctor enters 0, follow_up_date is NULL (No email will be sent)
-    # If doctor enters 1-15, calculate the date
+
+    if follow_up_days < 0 or follow_up_days > 15:
+        flash('Follow-up days must be between 0 and 15.', 'warning')
+        return redirect(url_for('doctor_appointments'))
+
     follow_up_date = None
+
     if 1 <= follow_up_days <= 15:
-        follow_up_date = (datetime.now() + timedelta(days=follow_up_days)).strftime('%Y-%m-%d')
-    
-    # Update status and follow-up date
-    cursor.execute('''
-        UPDATE Appointment 
-        SET status = 'Completed', follow_up_date = %s 
-        WHERE appointment_id = %s AND doctor_id = %s
-    ''', (follow_up_date, appointment_id, session['id']))
-    
-    mysql.connection.commit()
-    cursor.close()
-    
+        follow_up_date = (
+            get_server_time_with_offset() + timedelta(days=follow_up_days)
+        ).date()
+
+    cursor = mysql.connection.cursor()
+
+    try:
+        cursor.execute("""
+            UPDATE Appointment
+            SET status = 'Completed',
+                follow_up_date = %s
+            WHERE appointment_id = %s
+              AND doctor_id = %s
+              AND status = 'Approved'
+        """, (follow_up_date, appointment_id, session['id']))
+
+        updated = cursor.rowcount > 0
+        mysql.connection.commit()
+
+    except Exception as e:
+        mysql.connection.rollback()
+        print(f"❌ Appointment completion error: {e}")
+        flash('Unable to complete the appointment.', 'danger')
+        return redirect(url_for('doctor_appointments'))
+
+    finally:
+        cursor.close()
+
+    if not updated:
+        flash(
+            'Appointment was not found, is not assigned to you, '
+            'or is already completed.',
+            'warning'
+        )
+        return redirect(url_for('doctor_appointments'))
+
+    # Send the thank-you email after the appointment is completed.
+    email_sent = send_appointment_completed_email(int(appointment_id))
+
     if follow_up_date:
-        flash(f'Completed! Follow-up scheduled in {follow_up_days} days. Patient will be reminded 1 day before.', 'success')
+        if email_sent:
+            flash(
+                f'Appointment completed! Follow-up scheduled for '
+                f'{follow_up_date.strftime("%d-%m-%Y")}. '
+                'The patient was sent the confirmation email.',
+                'success'
+            )
+        else:
+            flash(
+                f'Appointment completed and follow-up scheduled for '
+                f'{follow_up_date.strftime("%d-%m-%Y")}, '
+                'but the thank-you email could not be sent.',
+                'warning'
+            )
     else:
-        flash('Appointment marked as completed! No follow-up scheduled.', 'success')
-        
+        if email_sent:
+            flash(
+                'Appointment completed! Thank-you email sent. '
+                'No follow-up scheduled.',
+                'success'
+            )
+        else:
+            flash(
+                'Appointment completed, but the thank-you email '
+                'could not be sent. No follow-up scheduled.',
+                'warning'
+            )
+
     return redirect(url_for('doctor_appointments'))
 
 @app.route('/doctor/appointments')
@@ -1606,6 +1662,100 @@ def send_email_via_sendgrid(to_email, subject, body):
     except Exception as e:
         print(f"❌ Brevo email error sending to {to_email}: {e}")
         return False
+
+
+def send_appointment_completed_email(appointment_id):
+    """Send a thank-you email when a doctor completes an appointment."""
+
+    conn = None
+    cursor = None
+
+    try:
+        import pymysql
+
+        conn = pymysql.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                a.appointment_id,
+                a.date,
+                p.name AS patient_name,
+                p.email AS patient_email,
+                d.name AS doctor_name
+            FROM Appointment a
+            JOIN Patient p ON a.patient_id = p.patient_id
+            JOIN Doctor d ON a.doctor_id = d.doctor_id
+            WHERE a.appointment_id = %s
+              AND a.status = 'Completed'
+        """, (appointment_id,))
+
+        appointment = cursor.fetchone()
+
+        if not appointment:
+            print(
+                f"⚠️ Completed appointment {appointment_id} not found."
+            )
+            return False
+
+        patient_email = appointment.get('patient_email')
+
+        if not patient_email:
+            print("⚠️ Patient email address is missing.")
+            return False
+
+        appointment_date = appointment['date']
+
+        if hasattr(appointment_date, 'strftime'):
+            appointment_date = appointment_date.strftime('%d-%m-%Y')
+
+        subject = "Thank You for Visiting MediCare Hospital"
+
+        body = f"""Dear {appointment['patient_name']},
+
+Thank you for visiting MediCare Hospital!
+
+We appreciate your trust in our hospital and in Dr. {appointment['doctor_name']}.
+
+Your appointment on {appointment_date} has been marked as completed.
+
+{f"Your follow-up appointment is scheduled for {appointment['follow_up_date']}. Please visit MediCare Hospital on that date." if appointment.get('follow_up_date') else "If your doctor has recommended a follow-up visit, please contact MediCare Hospital to schedule your next appointment."}
+
+Thank you for choosing MediCare Hospital. We look forward to assisting you again whenever you need us.
+
+Best regards,
+MediCare Hospital Team"""
+
+        email_sent = send_email_via_sendgrid(
+            patient_email,
+            subject,
+            body
+        )
+
+        if email_sent:
+            print(
+                f"✅ Thank-you email accepted for {patient_email}."
+            )
+            return True
+
+        print("⚠️ Failed to send appointment completion email.")
+        return False
+
+    except Exception as e:
+        print(f"❌ Appointment completion email error: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
     
 
 def check_and_send_reminders():
