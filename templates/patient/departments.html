@@ -10,7 +10,7 @@
     </div>
 
     {% if departments %}
-    <div class="doctors-grid">
+    <div class="departments-grid">
         {% for department in departments %}
         <div class="doctor-card">
             <div class="doctor-avatar">
@@ -25,6 +25,27 @@
                     {{ department.doctor_count }}
                     {{ 'doctor' if department.doctor_count == 1 else 'doctors' }}
                 </p>
+
+                {% set department_doctors = doctors_by_department.get(department.department_id, []) %}
+                {% if department_doctors %}
+                <div class="department-doctors">
+                    {% for doctor in department_doctors %}
+                    <div class="department-doctor">
+                        <a href="{{ url_for('doctor_profile', doctor_id=doctor.doctor_id) }}">{{ doctor.name }}</a>
+                        <span class="badge badge-{{ 'approved' if doctor.availability.status == 'Available' else 'rejected' }}"
+                              data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ doctor.availability.label }}</span>
+                        <span class="availability-note" data-availability-note>
+                            {% if doctor.availability.status == 'Available' %}
+                                {{ doctor.availability.reason }}{% if doctor.availability.until %} until {{ doctor.availability.until }}{% endif %}
+                            {% else %}
+                                {{ doctor.availability.reason }}{% if doctor.availability.next %} &middot; Next: {{ doctor.availability.next }}{% endif %}
+                            {% endif %}
+                        </span>
+                        <span class="department-doctor-hours">{{ doctor.working_hours }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="doctor-actions">
                 <a href="{{ url_for('patient_department_detail', department_id=department.department_id) }}" class="btn btn-primary btn-block">
@@ -41,4 +62,8 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor-availability.js') }}"></script>
 {% endblock %}

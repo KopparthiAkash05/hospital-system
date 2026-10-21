@@ -157,14 +157,45 @@
             </div>
 
             <!-- Departments -->
-            <div class="dashboard-section">
-                <h2><i class="fas fa-building"></i> Departments</h2>
+            <div class="dashboard-section" id="departments">
+                <div class="section-head">
+                    <h2><i class="fas fa-building"></i> Departments</h2>
+                    <div class="section-options">
+                        <a href="{{ url_for('patient_departments') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-layer-group"></i> All Departments
+                        </a>
+                        <form class="section-search" role="search" onsubmit="return false;">
+                            <div class="section-search-field">
+                                <i class="fas fa-search"></i>
+                                <input type="search" id="department-search"
+                                       placeholder="Search departments"
+                                       aria-label="Search departments"
+                                       autocomplete="off">
+                                <button type="button" class="section-search-clear"
+                                        id="department-search-clear"
+                                        aria-label="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
                 {% if departments %}
-                <div class="appointments-list">
+                <div class="departments-grid departments-grid--dashboard" id="department-grid">
                     {% for department in departments %}
-                    <div class="appointment-card">
+                    <div class="appointment-card department-card"
+                         data-department="{{ department.name|e }}"
+                         data-search="{{ (department.name ~ ' ' ~ (department.description or ''))|e }}">
                         <div class="appointment-info">
                             <h3>{{ department.name }}</h3>
+                            {% if department.description %}
+                            <p class="department-about"><i class="fas fa-align-left"></i>
+                                {{ department.description }}
+                            </p>
+                            {% endif %}
+                            <p class="department-checkup"><i class="fas fa-clipboard-check"></i>
+                                {{ department.checkup }}
+                            </p>
                             <p><i class="fas fa-user-md"></i>
                                 {{ department.doctor_count }}
                                 {{ 'doctor' if department.doctor_count == 1 else 'doctors' }} available
@@ -172,12 +203,16 @@
                         </div>
                         <div class="appointment-actions">
                             <a href="{{ url_for('patient_department_detail', department_id=department.department_id) }}"
-                               class="btn btn-primary btn-sm">
+                               class="btn btn-primary btn-sm btn-block">
                                 <i class="fas fa-users"></i> View
                             </a>
                         </div>
                     </div>
                     {% endfor %}
+                    <div class="empty-state" id="department-no-results" hidden>
+                        <i class="fas fa-building"></i>
+                        <p>No department matches your search</p>
+                    </div>
                 </div>
                 {% else %}
                 <div class="empty-state">
@@ -187,13 +222,13 @@
                 {% endif %}
             </div>
 
-            <!-- Available Doctors -->
+            <!-- Doctors with their live availability -->
             <div class="dashboard-section">
-                <h2><i class="fas fa-user-md"></i> Available Doctors</h2>
+                <h2><i class="fas fa-user-md"></i> Doctors</h2>
                 {% if available_doctors %}
                 <div class="doctors-grid">
                     {% for doctor in available_doctors %}
-                    <div class="doctor-card">
+                    <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}">
                         <div class="doctor-avatar">
                             <i class="fas fa-user-md"></i>
                         </div>
@@ -201,9 +236,24 @@
                             <h3>Dr. {{ doctor.name }}</h3>
                             <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
                             <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
-                            {% if doctor.department_name %}
+                            {% if doctor.department_name and doctor.department_name != doctor.specialization %}
                             <p><i class="fas fa-building"></i> {{ doctor.department_name }}</p>
                             {% endif %}
+                            {% if doctor.working_hours %}
+                            <p><i class="fas fa-clock"></i> {{ doctor.working_hours }}</p>
+                            {% endif %}
+                            <p class="doctor-status">
+                                <i class="fas fa-circle"></i>
+                                <span class="badge badge-{{ 'approved' if doctor.availability.status == 'Available' else 'rejected' }}"
+                                      data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ doctor.availability.label }}</span>
+                                <span class="availability-note" data-availability-note>
+                                    {% if doctor.availability.status == 'Available' %}
+                                        {{ doctor.availability.reason }}{% if doctor.availability.until %} until {{ doctor.availability.until }}{% endif %}
+                                    {% else %}
+                                        {{ doctor.availability.reason }}{% if doctor.availability.next %} &middot; Next: {{ doctor.availability.next }}{% endif %}
+                                    {% endif %}
+                                </span>
+                            </p>
                         </div>
                         <div class="doctor-actions">
                             <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
@@ -216,7 +266,7 @@
                 {% else %}
                 <div class="empty-state">
                     <i class="fas fa-user-md"></i>
-                    <p>No doctors are available right now</p>
+                    <p>No doctors are listed right now</p>
                 </div>
                 {% endif %}
             </div>
@@ -427,6 +477,58 @@
     window.addEventListener('pagehide', stopPolling);
 
     startPolling();
+})();
+</script>
+
+<script>
+(function () {
+    // Live filter for the Departments grid: typing narrows the cards in place
+    // so the rest of the dashboard keeps its scroll position.
+    var input = document.getElementById('department-search');
+    var grid = document.getElementById('department-grid');
+    var clearBtn = document.getElementById('department-search-clear');
+    var emptyState = document.getElementById('department-no-results');
+    if (!input || !grid) return;
+
+    var cards = Array.prototype.slice.call(
+        grid.querySelectorAll('.department-card')
+    );
+
+    function apply(term) {
+        var query = term.trim().toLowerCase();
+        var shown = 0;
+
+        cards.forEach(function (card) {
+            var text = (card.getAttribute('data-search') ||
+                        card.getAttribute('data-department') || '').toLowerCase();
+            var match = !query || text.indexOf(query) !== -1;
+            card.hidden = !match;
+            if (match) shown += 1;
+        });
+
+        if (emptyState) emptyState.hidden = shown !== 0;
+        if (clearBtn) {
+            clearBtn.parentNode.classList.toggle('has-value', query.length > 0);
+        }
+    }
+
+    input.addEventListener('input', function () {
+        apply(this.value);
+    });
+
+    input.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        apply(this.value);
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            input.value = '';
+            apply('');
+            input.focus();
+        });
+    }
 })();
 </script>
 {% endblock %}

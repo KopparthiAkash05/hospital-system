@@ -8,24 +8,31 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import MySQLdb.cursors
 from symptom_checker import analyze_symptoms, suggest_department
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta, timezone, date  # ← MUST HAVE timezone
+from datetime import datetime, timedelta, timezone, date, time as dt_time  # ← MUST HAVE timezone
 from decimal import Decimal
 import re
 import secrets  # ← MUST HAVE secrets
 import math
 import requests # Make sure this is imported at the very top of your app.py
-from flask_mail import Mail, Message
 from functools import wraps
 from apscheduler.schedulers.background import BackgroundScheduler
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
 # Local config lives in the gitignored `details.env`; production injects real
 # environment variables. Never bake credentials into source as a fallback.
 load_dotenv()
 load_dotenv('details.env')
+
+# Hospital local time (IST, UTC +05:30). Every slot listing, availability
+# check and booking validation compares against this one timezone.
+from zoneinfo import ZoneInfo
+
+HOSPITAL_TZ = ZoneInfo('Asia/Kolkata')
+
+
+def local_now():
+    """Current wall-clock time in the hospital's configured timezone."""
+    return datetime.now(HOSPITAL_TZ)
 
 
 def _required_env(name):
@@ -81,18 +88,9 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# Email configuration (Loaded from Render Environment Variables)
-# Email configuration - ADD TIMEOUT SETTINGS
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_TIMEOUT'] = 10  # Add this - 10 second timeout
-
-
-mail = Mail(app)
+# Email is sent exclusively through the Brevo HTTP API helper
+# (send_email_via_sendgrid). The previous Flask-Mail / Gmail SMTP setup was
+# dead code and has been removed.
 
 # Single scheduler handle; populated by start_scheduler() near the end of file.
 scheduler = None
@@ -355,6 +353,26 @@ def generate_30min_slots(start_str, end_str):
                 '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', 
                 '16:00', '16:30']
 
+
+def filter_future_slots(slots, date_str, now=None):
+    """
+    Drop slots that have already elapsed when date_str is today.
+
+    Slots are 'HH:MM' strings; a slot stays bookable only while its start
+    time is still strictly in the future. Future dates pass through
+    unchanged so only the selected day's clock is ever compared.
+    """
+    if now is None:
+        now = local_now()
+    try:
+        selected = datetime.strptime(str(date_str)[:10], '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return list(slots)
+    if selected != now.date():
+        return list(slots)
+    cutoff = now.strftime('%H:%M')
+    return [s for s in slots if s > cutoff]
+
 # ========== WEB DECORATORS ==========
 def login_required(f):
     @wraps(f)
@@ -571,6 +589,64 @@ def get_departments(active_only=True):
         return []
 
 
+# Check-up information shown on the patient dashboard for each department.
+# Keys are matched against the department name, so a department added later
+# without a description still gets a sensible starting point.
+DEPARTMENT_CHECKUPS = {
+    'allergy & immunology': 'Allergy panel, skin prick test and IgE screening',
+    'infectious disease': 'Infection screening, blood culture and swab tests',
+    'emergency medicine': 'Triage vitals, ECG, blood work and emergency imaging',
+    'general medicine': 'Blood pressure, blood sugar and routine blood work',
+    'plastic surgery': 'Consultation, imaging and surgical planning review',
+    'gastroenterology': 'Endoscopy, liver function test and stool analysis',
+    'hematology': 'Complete blood count, iron studies and clotting profile',
+    'immunology': 'Allergy panel, skin prick test and IgE screening',
+    'ophthalmology': 'Eye pressure, visual acuity and retinal screening',
+    'orthopedics': 'X-ray, joint imaging and bone density scan',
+    'pulmonology': 'Chest X-ray, spirometry and oxygen saturation test',
+    'rheumatology': 'Autoimmune panel, arthritis profile and joint imaging',
+    'hepatology': 'Liver function test, hepatitis panel and abdominal ultrasound',
+    'endocrinology': 'Thyroid panel, HbA1c, blood sugar and hormone tests',
+    'dermatology': 'Skin examination, patch testing and dermoscopy',
+    'psychiatry': 'Mental health assessment, mood screening and sleep review',
+    'nephrology': 'Kidney function test, urine analysis and protein panel',
+    'cardiology': 'ECG, echocardiogram, blood pressure and lipid profile',
+    'gynecology': 'Ultrasound, Pap smear and hormone profile',
+    'neurology': 'EEG, nerve conduction study and brain imaging',
+    'oncology': 'Tumour markers, biopsy review and staging scans',
+    'pediatrics': 'Growth chart, vaccination review and blood work',
+    'radiology': 'X-ray, ultrasound and scan report review',
+    'vascular': 'Doppler study, blood pressure and circulation tests',
+    'dentistry': 'Dental examination, bite X-ray and scaling',
+    'urology': 'Urinalysis, ultrasound and prostate screening',
+    'emergency': 'Triage vitals, ECG, blood work and emergency imaging',
+    'dental': 'Dental examination, bite X-ray and scaling',
+    'allergy': 'Skin prick test, patch testing and allergy blood panel',
+    'ent': 'Hearing test, nasal endoscopy and throat examination',
+}
+
+# Longest key first: 'neurology' contains 'urology' and 'gastroenterology'
+# contains 'ent', so a specific name must be checked before a shorter one.
+DEPARTMENT_CHECKUP_LOOKUP = sorted(
+    DEPARTMENT_CHECKUPS.items(), key=lambda item: len(item[0]), reverse=True
+)
+
+
+def department_checkup(department):
+    """Check-up information for a department card.
+
+    Falls back to a generic line when the department is not one we know about.
+    """
+    if not department:
+        return 'Routine check-up and consultation'
+
+    name = (department.get('name') or '').strip().lower()
+    for key, checkup in DEPARTMENT_CHECKUP_LOOKUP:
+        if name == key or key in name:
+            return checkup
+    return 'Routine check-up and consultation'
+
+
 HOSPITAL_INFO_DEFAULTS = {
     'info_id': None,
     'name': 'MediCare Hospital',
@@ -692,6 +768,297 @@ def describe_schedule(doctor_id):
         )
         parts.append(f"{SCHEDULE_DAY_NAMES.get(day, 'Day')} {day}: {windows}")
     return '; '.join(parts)
+
+
+# ========== SCHEDULE BASED AVAILABILITY ENGINE ==========
+# The patient facing "available / unavailable" state is derived from the
+# doctor's weekly working windows (DoctorSchedule) evaluated against the
+# hospital's local time (IST). The stored Doctor.availability_status stays a
+# manual switch: this computation never writes it back to the database.
+
+SCHEDULE_DAY_ABBR = {
+    1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun'
+}
+
+
+def schedule_time_to_minutes(value):
+    """Minutes past midnight for a TIME value.
+
+    Accepts the datetime.timedelta values PyMySQL returns for TIME columns,
+    datetime.time objects and 'HH:MM' / 'HH:MM:SS' strings.
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, timedelta):
+        total = int(value.total_seconds())
+        return (total // 3600) * 60 + (total % 3600) // 60
+
+    if isinstance(value, dt_time):
+        return value.hour * 60 + value.minute
+
+    parts = str(value).strip().split(':')
+    try:
+        hours = int(parts[0])
+        minutes = int(parts[1]) if len(parts) > 1 else 0
+    except (ValueError, IndexError):
+        return None
+    return (hours % 24) * 60 + minutes
+
+
+def minutes_to_12hr(minutes):
+    """Minutes past midnight as '09:30 AM'."""
+    if minutes is None:
+        return ''
+    minutes = int(minutes) % (24 * 60)
+    hours, mins = divmod(minutes, 60)
+    hour_12 = hours % 12 or 12
+    return f"{hour_12:02d}:{mins:02d} {'AM' if hours < 12 else 'PM'}"
+
+
+def schedule_windows(schedules):
+    """Working windows as [(iso_day, start_minutes, end_minutes)].
+
+    A window whose end is not after its start is a night shift: the end is
+    pushed to the next day so the end minute is always greater than the start.
+    """
+    windows = []
+    for row in schedules or []:
+        if not row.get('is_active', 1):
+            continue
+        day = row.get('day_of_week')
+        start = schedule_time_to_minutes(row.get('start_time'))
+        end = schedule_time_to_minutes(row.get('end_time'))
+        if day is None or start is None or end is None:
+            continue
+        if end <= start:
+            end += 24 * 60
+        windows.append((int(day), start, end))
+    return windows
+
+
+def _windows_for_day(windows, iso_day):
+    return [(start, end) for (day, start, end) in windows if day == iso_day]
+
+
+def _as_hospital_time(moment):
+    """Normalises a datetime to the hospital's timezone (IST)."""
+    if moment is None:
+        return local_now()
+    if moment.tzinfo is None:
+        return moment.replace(tzinfo=HOSPITAL_TZ)
+    return moment.astimezone(HOSPITAL_TZ)
+
+
+def schedule_covers_moment(windows, moment):
+    """True when `moment` falls inside one of the working windows.
+
+    The start minute is inclusive and the end minute is exclusive, so a
+    09:00 - 17:00 window still counts as available at 16:59 and not at 17:00.
+    """
+    if not windows:
+        return False
+
+    moment = _as_hospital_time(moment)
+    iso_day = moment.isoweekday()
+    minutes = moment.hour * 60 + moment.minute
+
+    for start, end in _windows_for_day(windows, iso_day):
+        if end > 24 * 60:
+            # Night shift starting today: only the part before midnight is today.
+            if start <= minutes < 24 * 60:
+                return True
+        elif start <= minutes < end:
+            return True
+
+    # A night shift that started yesterday is still running after midnight.
+    previous_day = iso_day - 1 if iso_day > 1 else 7
+    for start, end in _windows_for_day(windows, previous_day):
+        if end > 24 * 60 and minutes < end - 24 * 60:
+            return True
+
+    return False
+
+
+def next_schedule_start(windows, moment):
+    """Next datetime (hospital time) a working window opens, or None."""
+    if not windows:
+        return None
+
+    moment = _as_hospital_time(moment)
+    for offset in range(0, 8):
+        for iso_day, start, end in windows:
+            if iso_day != (moment + timedelta(days=offset)).isoweekday():
+                continue
+            start_dt = moment.replace(
+                hour=start // 60, minute=start % 60, second=0, microsecond=0
+            ) + timedelta(days=offset)
+            if start_dt <= moment:
+                continue
+            return start_dt
+    return None
+
+
+def current_schedule_end(windows, moment):
+    """End datetime of the window that covers `moment`, or None."""
+    if not windows:
+        return None
+
+    moment = _as_hospital_time(moment)
+    iso_day = moment.isoweekday()
+    minutes = moment.hour * 60 + moment.minute
+
+    for start, end in _windows_for_day(windows, iso_day):
+        if end > 24 * 60:
+            if start <= minutes < 24 * 60:
+                end_minutes = end - 24 * 60
+                return moment.replace(
+                    hour=end_minutes // 60, minute=end_minutes % 60,
+                    second=0, microsecond=0
+                ) + timedelta(days=1)
+        elif start <= minutes < end:
+            return moment.replace(
+                hour=end // 60, minute=end % 60, second=0, microsecond=0
+            )
+
+    previous_day = iso_day - 1 if iso_day > 1 else 7
+    for start, end in _windows_for_day(windows, previous_day):
+        if end > 24 * 60 and minutes < end - 24 * 60:
+            end_minutes = end - 24 * 60
+            return moment.replace(
+                hour=end_minutes // 60, minute=end_minutes % 60,
+                second=0, microsecond=0
+            )
+
+    return None
+
+
+def _format_day_range(days):
+    """'Mon-Sat' for consecutive days, 'Mon, Wed, Fri' otherwise."""
+    unique = sorted(set(days))
+    if not unique:
+        return ''
+    if len(unique) == 1:
+        return SCHEDULE_DAY_ABBR.get(unique[0], str(unique[0]))
+    if unique == list(range(unique[0], unique[0] + len(unique))):
+        return (f"{SCHEDULE_DAY_ABBR.get(unique[0], unique[0])}-"
+                f"{SCHEDULE_DAY_ABBR.get(unique[-1], unique[-1])}")
+    return ', '.join(SCHEDULE_DAY_ABBR.get(day, str(day)) for day in unique)
+
+
+def format_working_hours(schedules):
+    """Compact summary of a doctor's week, e.g. 'Mon-Sat: 09:00 AM - 05:00 PM'."""
+    windows = schedule_windows(schedules)
+    if not windows:
+        return ''
+
+    grouped = {}
+    for iso_day, start, end in windows:
+        grouped.setdefault((start, end), []).append(iso_day)
+
+    parts = []
+    for (start, end), days in sorted(grouped.items(), key=lambda item: min(item[1])):
+        parts.append(
+            f"{_format_day_range(days)}: "
+            f"{minutes_to_12hr(start)} - {minutes_to_12hr(end)}"
+        )
+    return '; '.join(parts)
+
+
+def get_schedules_for_doctors(doctor_ids):
+    """{doctor_id: [schedule rows]} for many doctors in a single query."""
+    ids = [int(doctor_id) for doctor_id in (doctor_ids or []) if doctor_id]
+    if not ids:
+        return {}
+
+    placeholders = ', '.join(['%s'] * len(ids))
+    try:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(f'''
+            SELECT * FROM DoctorSchedule
+            WHERE doctor_id IN ({placeholders}) AND is_active = 1
+            ORDER BY doctor_id, day_of_week, start_time
+        ''', tuple(ids))
+        rows = cursor.fetchall()
+        cursor.close()
+    except Exception as e:
+        print(f"Schedules unavailable: {e}")
+        return {}
+
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row['doctor_id'], []).append(row)
+    return grouped
+
+
+def doctor_availability(doctor, schedules, now=None):
+    """Effective patient facing availability for a doctor.
+
+    Returns a dict with:
+      status   - 'Available' or 'Unavailable' (the stored enum value)
+      label    - 'Available' or 'Not Available' (what the UI shows)
+      reason   - short explanation shown next to the status
+      until    - '05:00 PM' when the running shift ends today
+      next     - 'Mon 09:00 AM' when the next shift starts
+      on_shift - True / False, or None when the doctor has no schedule rows
+      source   - 'schedule' | 'manual' | 'inactive'
+    """
+    moment = _as_hospital_time(now or local_now())
+
+    if not doctor:
+        return {'status': 'Unavailable', 'label': 'Not Available',
+                'reason': 'Doctor not found.',
+                'until': None, 'next': None, 'on_shift': False, 'source': 'inactive'}
+
+    if not doctor.get('is_active', 1):
+        return {'status': 'Unavailable', 'label': 'Not Available',
+                'reason': 'Not accepting appointments right now.',
+                'until': None, 'next': None, 'on_shift': False, 'source': 'inactive'}
+
+    if (doctor.get('availability_status') or 'Available') == 'Unavailable':
+        return {'status': 'Unavailable', 'label': 'Not Available',
+                'reason': 'Marked unavailable by the doctor.',
+                'until': None, 'next': None, 'on_shift': False, 'source': 'manual'}
+
+    windows = schedule_windows(schedules)
+    if not windows:
+        # No structured week on file: fall back to the manual switch.
+        return {'status': 'Available', 'label': 'Available',
+                'reason': 'Available for appointments.',
+                'until': None, 'next': None, 'on_shift': None, 'source': 'manual'}
+
+    if schedule_covers_moment(windows, moment):
+        end_dt = current_schedule_end(windows, moment)
+        return {'status': 'Available', 'label': 'Available', 'reason': 'Available now',
+                'until': minutes_to_12hr(end_dt.hour * 60 + end_dt.minute) if end_dt else None,
+                'next': None, 'on_shift': True, 'source': 'schedule'}
+
+    next_dt = next_schedule_start(windows, moment)
+    next_label = None
+    if next_dt:
+        next_label = (f"{next_dt.strftime('%a')} "
+                      f"{minutes_to_12hr(next_dt.hour * 60 + next_dt.minute)}")
+
+    return {'status': 'Unavailable', 'label': 'Not Available',
+            'reason': 'Not working right now',
+            'until': None, 'next': next_label, 'on_shift': False, 'source': 'schedule'}
+
+
+def attach_availability(doctors, now=None):
+    """Adds 'availability' and 'working_hours' to each doctor row."""
+    if not doctors:
+        return doctors
+
+    moment = now or local_now()
+    schedules = get_schedules_for_doctors(
+        [doctor.get('doctor_id') for doctor in doctors]
+    )
+
+    for doctor in doctors:
+        rows = schedules.get(doctor.get('doctor_id'), [])
+        doctor['availability'] = doctor_availability(doctor, rows, moment)
+        doctor['working_hours'] = format_working_hours(rows)
+    return doctors
 
 
 def appointment_is_active(status):
@@ -1420,7 +1787,7 @@ def patient_dashboard():
     appointment_history = cursor.fetchall()
 
     # Today's appointments, shown as its own card on the dashboard.
-    today = datetime.now().date()
+    today = local_now().date()
     cursor.execute('''
         SELECT a.*, d.name as doctor_name, d.specialization
         FROM Appointment a
@@ -1445,6 +1812,7 @@ def patient_dashboard():
     # A short list of doctors patients can book with right away.
     cursor.execute('''
         SELECT d.doctor_id, d.name, d.specialization, d.experience,
+               d.is_active, d.availability_status,
                dp.name AS department_name
         FROM Doctor d
         LEFT JOIN Department dp ON d.department_id = dp.department_id
@@ -1453,16 +1821,22 @@ def patient_dashboard():
         LIMIT 4
     ''')
     available_doctors = cursor.fetchall()
+    attach_availability(available_doctors)
 
     cursor.execute('''
-        SELECT dp.department_id, dp.name, COUNT(d.doctor_id) AS doctor_count
+        SELECT dp.department_id, dp.name, dp.description,
+               COUNT(d.doctor_id) AS doctor_count
         FROM Department dp
         LEFT JOIN Doctor d ON d.department_id = dp.department_id AND d.is_active = 1
         WHERE dp.is_active = 1
-        GROUP BY dp.department_id, dp.name
+        GROUP BY dp.department_id, dp.name, dp.description
         ORDER BY dp.name
     ''')
     departments = cursor.fetchall()
+
+    # Each department card carries its own check-up information.
+    for department in departments:
+        department['checkup'] = department_checkup(department)
 
     # The patient's active queue seats, shown as a live status card.
     my_queue_entries = _load_patient_queue(session['id'])
@@ -1583,6 +1957,10 @@ def view_doctors():
     specializations = [row['specialization'] for row in cursor.fetchall()]
 
     cursor.close()
+
+    # Schedule based availability (IST) for every listed doctor.
+    attach_availability(doctors)
+
     return render_template('patient/view_doctors.html',
                            doctors=doctors,
                            specializations=specializations,
@@ -1612,7 +1990,7 @@ def doctor_profile(doctor_id):
 
     # Upcoming days the patient can still book, with the slots left on each.
     availability = []
-    base_day = datetime.now().date()
+    base_day = local_now().date()
     for offset in range(1, 15):
         day = base_day + timedelta(days=offset)
         if day.isoweekday() == 7:  # Sunday, already closed for all doctors
@@ -1640,9 +2018,15 @@ def doctor_profile(doctor_id):
 
     cursor.close()
 
+    schedules = get_doctor_schedules(doctor_id)
+    availability_info = doctor_availability(doctor, schedules)
+    working_hours = format_working_hours(schedules)
+
     return render_template('patient/doctor_profile.html',
                            doctor=doctor,
                            availability=availability,
+                           availability_info=availability_info,
+                           working_hours=working_hours,
                            schedule_summary=describe_schedule(doctor_id))
 
 
@@ -1691,9 +2075,14 @@ def api_available_slots(doctor_id):
         return jsonify({'success': False, 'message': 'Doctors are not available on Sundays.'}), 409
 
     slots = get_slots_for_date(doctor, date_str)
+    # Slots that have already elapsed today are never offered.
+    slots = filter_future_slots(slots, date_str)
     if not slots:
         cursor.close()
-        return jsonify({'success': True, 'slots': [], 'message': 'No availability on this date.'})
+        message = ('No upcoming slots available for today. Please select another date.'
+                   if selected == local_now().date()
+                   else 'No availability on this date.')
+        return jsonify({'success': True, 'slots': [], 'message': message})
 
     # Times already held by a live appointment are hidden.
     placeholders = ', '.join(['%s'] * len(slots))
@@ -1713,12 +2102,65 @@ def api_available_slots(doctor_id):
 
     free_slots = [s for s in slots if s not in taken]
 
+    if not free_slots and selected == local_now().date():
+        message = 'No upcoming slots available for today. Please select another date.'
+    else:
+        message = 'No free slots left on this date.' if not free_slots else ''
+
     return jsonify({
         'success': True,
         'date': date_str,
         'slots': [{'24h': s, '12h': get_12hr_time(s)} for s in free_slots],
-        'message': 'No free slots left on this date.' if not free_slots else ''
+        'message': message
     })
+
+
+@app.route('/api/doctor_availability')
+@api_patient_required
+def api_doctor_availability():
+    """
+    Live availability for every doctor.
+
+    The doctor listings render the schedule based status server side; this
+    endpoint lets an open page pick up a shift starting or ending without a
+    full reload, so a stale "Available" badge never lingers.
+    """
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    try:
+        cursor.execute('''
+            SELECT doctor_id, name, is_active, availability_status
+            FROM Doctor
+            ORDER BY doctor_id
+        ''')
+        doctors = cursor.fetchall()
+    except Exception as e:
+        print(f"Doctor availability unavailable: {e}")
+        doctors = []
+    finally:
+        cursor.close()
+
+    moment = local_now()
+    schedules = get_schedules_for_doctors([d['doctor_id'] for d in doctors])
+
+    payload = []
+    for doctor in doctors:
+        info = doctor_availability(doctor, schedules.get(doctor['doctor_id'], []), moment)
+        payload.append({
+            'doctor_id': doctor['doctor_id'],
+            'status': info['status'],
+            'label': info['label'],
+            'reason': info['reason'],
+            'until': info['until'],
+            'next': info['next'],
+        })
+
+    response = jsonify({
+        'success': True,
+        'server_time': moment.strftime('%Y-%m-%d %I:%M %p'),
+        'doctors': payload,
+    })
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 @app.route('/patient/departments')
 @patient_required
@@ -1739,7 +2181,7 @@ def patient_departments():
 
     cursor.execute('''
         SELECT d.doctor_id, d.name, d.specialization, d.experience,
-               d.consultation_fee, d.availability_status,
+               d.consultation_fee, d.availability_status, d.is_active,
                dp.department_id, dp.name AS department_name
         FROM Doctor d
         JOIN Department dp ON d.department_id = dp.department_id
@@ -1749,6 +2191,8 @@ def patient_departments():
     doctors = cursor.fetchall()
 
     cursor.close()
+
+    attach_availability(doctors)
 
     grouped = {}
     for doctor in doctors:
@@ -1782,6 +2226,8 @@ def patient_department_detail(department_id):
     doctors = cursor.fetchall()
 
     cursor.close()
+
+    attach_availability(doctors)
 
     return render_template('patient/department_detail.html',
                            department=department,
@@ -1841,7 +2287,12 @@ def get_24hr_hm(value):
 
 
 def get_datetime_12h(value):
-    """Render a datetime-like value keeping its date but a 12-hour time."""
+    """Render a database timestamp in IST (UTC→IST) with a 12-hour time.
+
+    All ``created_at``/``updated_at`` columns are written by the MySQL
+    server in UTC, so naive values are interpreted as UTC and converted
+    once to Asia/Kolkata before formatting.
+    """
     if not value:
         return ''
     if isinstance(value, datetime):
@@ -1852,6 +2303,9 @@ def get_datetime_12h(value):
             moment = datetime.strptime(text[:19], '%Y-%m-%d %H:%M:%S')
         except ValueError:
             return text
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=ZoneInfo('UTC'))
+    moment = moment.astimezone(HOSPITAL_TZ)
     return moment.strftime('%Y-%m-%d %I:%M %p')
 
 
@@ -1894,12 +2348,13 @@ def book_appointment(doctor_id):
     requested_date = request.form.get('date') if request.method == 'POST' else request.args.get('date')
     try:
         slot_date = (datetime.strptime(requested_date, '%Y-%m-%d').date()
-                     if requested_date else datetime.now().date())
+                     if requested_date else local_now().date())
         slot_date_str = slot_date.isoformat()
     except (ValueError, TypeError):
-        slot_date_str = datetime.now().date().isoformat()
+        slot_date_str = local_now().date().isoformat()
 
-    raw_slots_24h = get_slots_for_date(doctor, slot_date_str)
+    raw_slots_24h = filter_future_slots(
+        get_slots_for_date(doctor, slot_date_str), slot_date_str)
     available_slots = [{'24h': slot, '12h': get_12hr_time(slot)} for slot in raw_slots_24h]
     booked_slot_times = set()
     cursor.execute('''
@@ -1917,8 +2372,16 @@ def book_appointment(doctor_id):
         # 1. PAST DATE CHECK (checked first so a past Sunday reports the
         #    more informative "past date" message rather than "no Sundays")
         selected_date = datetime.strptime(date, '%Y-%m-%d').date()
-        if selected_date < datetime.now().date():
+        now = local_now()
+        if selected_date < now.date():
             flash('You cannot book an appointment for a past date.', 'danger')
+            cursor.close()
+            return redirect(url_for('book_appointment', doctor_id=doctor_id))
+
+        # 1b. PAST TIME CHECK — a slot that has already elapsed today can
+        #     never be booked, even if the form was manipulated.
+        if selected_date == now.date() and str(time_24)[:5] <= now.strftime('%H:%M'):
+            flash('That time has already passed for today. Please choose a later slot or another date.', 'danger')
             cursor.close()
             return redirect(url_for('book_appointment', doctor_id=doctor_id))
 
@@ -1994,11 +2457,16 @@ def book_appointment(doctor_id):
             return redirect(url_for('patient_dashboard'))
     
     cursor.close()
-    today = datetime.now().strftime('%Y-%m-%d')
-    
+    now = local_now()
+    today = now.strftime('%Y-%m-%d')
+    slots_hint = None
+    if slot_date_str == today and not raw_slots_24h:
+        slots_hint = 'No upcoming slots available for today. Please select another date.'
+
     return render_template('patient/book_appointment.html', doctor=doctor, today=today,
                            selected_date=slot_date_str,
                            available_slots=available_slots,
+                           slots_hint=slots_hint,
                            booked_slots=sorted(booked_slot_times))
 
 @app.route('/patient/book_appointment', methods=['GET', 'POST'])
@@ -2041,8 +2509,16 @@ def patient_book_appointment_page():
             return redirect(url_for('patient_book_appointment_page'))
 
         # 2. PAST DATE CHECK
-        if selected_date < datetime.now().date():
+        now = local_now()
+        if selected_date < now.date():
             flash('You cannot book an appointment for a past date.', 'danger')
+            cursor.close()
+            return redirect(url_for('patient_book_appointment_page'))
+
+        # 2a. PAST TIME CHECK — today's elapsed slots cannot be booked even
+        #     if the request bypasses the form.
+        if selected_date == now.date() and str(time_24)[:5] <= now.strftime('%H:%M'):
+            flash('That time has already passed for today. Please choose a later slot or another date.', 'danger')
             cursor.close()
             return redirect(url_for('patient_book_appointment_page'))
 
@@ -2121,8 +2597,9 @@ def patient_book_appointment_page():
     doctors = cursor.fetchall()
     cursor.close()
     
-    today = datetime.now().strftime('%Y-%m-%d')
-    default_slots_24h = generate_30min_slots("09:00", "17:00")
+    today = local_now().strftime('%Y-%m-%d')
+    default_slots_24h = filter_future_slots(
+        generate_30min_slots("09:00", "17:00"), today)
     available_slots = [{'24h': slot, '12h': get_12hr_time(slot)} for slot in default_slots_24h]
     
     return render_template('patient/book_appoinment_page.html', doctors=doctors, today=today, available_slots=available_slots, departments=get_departments())
@@ -2146,7 +2623,11 @@ def cancel_appointment(appointment_id):
         notify_appointment_event(appointment_id, 'cancelled')
         log_audit('CANCEL_APPOINTMENT', 'Appointment', appointment_id,
                   'Patient cancelled the appointment')
-        flash('Appointment cancelled successfully!', 'success')
+        email_sent = send_appointment_cancelled_email(appointment_id)
+        if email_sent:
+            flash('Appointment cancelled successfully! A confirmation email has been sent.', 'success')
+        else:
+            flash('Appointment cancelled, but the confirmation email could not be sent.', 'warning')
     else:
         flash('Could not cancel appointment. It may have already been completed or cancelled.', 'warning')
     
@@ -2288,7 +2769,8 @@ def reschedule_appointment(appointment_id):
         cursor.close()
         return redirect(url_for('patient_dashboard'))
 
-    today = datetime.now().date()
+    now = local_now()
+    today = now.date()
     if appointment['date'] < today:
         flash('Past appointments cannot be rescheduled.', 'warning')
         cursor.close()
@@ -2306,6 +2788,12 @@ def reschedule_appointment(appointment_id):
 
         if selected_date < today:
             flash('You cannot reschedule to a past date.', 'danger')
+            cursor.close()
+            return redirect(url_for('reschedule_appointment', appointment_id=appointment_id))
+
+        # A new time that has already elapsed today is not selectable.
+        if selected_date == today and str(new_time)[:5] <= now.strftime('%H:%M'):
+            flash('That time has already passed for today. Please choose a later slot.', 'danger')
             cursor.close()
             return redirect(url_for('reschedule_appointment', appointment_id=appointment_id))
 
@@ -2346,13 +2834,16 @@ def reschedule_appointment(appointment_id):
         return redirect(url_for('patient_dashboard'))
 
     cursor.close()
+    appointment_date = str(appointment['date'])[:10]
     available_slots = [{'24h': s, '12h': get_12hr_time(s)}
-                       for s in get_slots_for_date(appointment, appointment['date'])]
+                       for s in filter_future_slots(
+                           get_slots_for_date(appointment, appointment['date']),
+                           appointment_date)]
 
     return render_template('patient/reschedule.html',
                            appointment=appointment,
                            available_slots=available_slots,
-                           today=datetime.now().strftime('%Y-%m-%d'))
+                           today=local_now().strftime('%Y-%m-%d'))
 
 @app.route('/patient/notifications')
 @patient_required
@@ -2444,7 +2935,7 @@ def render_notifications(user_type):
 def doctor_dashboard():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     
-    today = datetime.now().date()
+    today = local_now().date()
     
     # Get search parameters from URL
     search_patient = request.args.get('search', '').strip()
@@ -2800,7 +3291,11 @@ def doctor_cancel_appointment(appointment_id):
         notify_appointment_event(appointment_id, 'cancelled', 'Cancelled by the doctor. ')
         log_audit('CANCEL_APPOINTMENT', 'Appointment', appointment_id,
                   'Doctor cancelled the appointment')
-        flash('Appointment cancelled successfully!', 'success')
+        email_sent = send_appointment_cancelled_email(appointment_id)
+        if email_sent:
+            flash('Appointment cancelled successfully! A confirmation email has been sent.', 'success')
+        else:
+            flash('Appointment cancelled, but the confirmation email could not be sent.', 'warning')
     else:
         flash('Could not cancel appointment. Completed appointments cannot be cancelled.', 'warning')
 
@@ -3085,7 +3580,7 @@ def admin_dashboard():
     total_departments = scalar('SELECT COUNT(*) AS total FROM Department')
     today_appointments = scalar(
         'SELECT COUNT(*) AS total FROM Appointment WHERE date = %s',
-        (datetime.now().date(),)
+        (local_now().date(),)
     )
 
     status_counts = appointment_status_counts()
@@ -3699,7 +4194,11 @@ def admin_cancel_appointment(appointment_id):
     if appointment_cancelled:
         notify_appointment_event(appointment_id, 'cancelled', 'Cancelled by the hospital. ')
         log_audit('CANCEL_APPOINTMENT', 'Appointment', appointment_id, 'Admin cancelled the appointment')
-        flash('Appointment cancelled successfully!', 'success')
+        email_sent = send_appointment_cancelled_email(appointment_id)
+        if email_sent:
+            flash('Appointment cancelled successfully! A confirmation email has been sent.', 'success')
+        else:
+            flash('Appointment cancelled, but the confirmation email could not be sent.', 'warning')
     else:
         flash('Could not cancel appointment. Completed appointments cannot be cancelled.', 'warning')
 
@@ -6098,6 +6597,8 @@ def nearby_doctors():
     patient = cursor.fetchone()
     cursor.close()
 
+    attach_availability(doctors)
+
     def calculate_distance(lat1, lon1, lat2, lon2):
         """Great-circle distance in km (straight line, not driving distance)."""
         R = 6371
@@ -6206,12 +6707,10 @@ def symptom_checker():
 
 
 from datetime import datetime, timedelta, timezone
-# India Standard Time (IST): UTC +05:30
-TIMEZONE_OFFSET_HOURS = 5.5
+# India Standard Time (IST): UTC +05:30 — see HOSPITAL_TZ / local_now().
 def get_server_time_with_offset():
     """Return the current time in the configured local timezone."""
-    now_utc = datetime.now(timezone.utc)
-    return now_utc + timedelta(hours=TIMEZONE_OFFSET_HOURS)
+    return local_now()
 
 
 def send_email_via_sendgrid(to_email, subject, body):
@@ -6292,6 +6791,7 @@ def send_appointment_completed_email(appointment_id):
             SELECT
                 a.appointment_id,
                 a.date,
+                a.follow_up_date,
                 p.name AS patient_name,
                 p.email AS patient_email,
                 d.name AS doctor_name
@@ -6321,6 +6821,10 @@ def send_appointment_completed_email(appointment_id):
         if hasattr(appointment_date, 'strftime'):
             appointment_date = appointment_date.strftime('%d-%m-%Y')
 
+        follow_up_date = appointment.get('follow_up_date')
+        if hasattr(follow_up_date, 'strftime'):
+            follow_up_date = follow_up_date.strftime('%d-%m-%Y')
+
         subject = "Thank You for Visiting MediCare Hospital"
 
         body = f"""Dear {appointment['patient_name']},
@@ -6331,7 +6835,7 @@ We appreciate your trust in our hospital and in Dr. {appointment['doctor_name']}
 
 Your appointment on {appointment_date} has been marked as completed.
 
-{f"Your follow-up appointment is scheduled for {appointment['follow_up_date']}. Please visit MediCare Hospital on that date." if appointment.get('follow_up_date') else "If your doctor has recommended a follow-up visit, please contact MediCare Hospital to schedule your next appointment."}
+{f"Your follow-up appointment is scheduled for {follow_up_date}. Please visit MediCare Hospital on that date." if follow_up_date else "If your doctor has recommended a follow-up visit, please contact MediCare Hospital to schedule your next appointment."}
 
 Thank you for choosing MediCare Hospital. We look forward to assisting you again whenever you need us.
 
@@ -6811,10 +7315,8 @@ def send_appointment_accepted_email(appointment_id):
         if hasattr(appointment_date, 'strftime'):
             appointment_date = appointment_date.strftime('%d-%m-%Y')
 
-        if hasattr(appointment_time, 'strftime'):
-            appointment_time = appointment_time.strftime('%I:%M %p')
-        else:
-            appointment_time = str(appointment_time)
+        # TIME columns arrive as timedelta; format once as 'hh:mm AM/PM'.
+        appointment_time = get_12hr_time(appointment_time)
 
         # The approval just reserved this patient's queue number.
         cursor.execute(
@@ -6929,10 +7431,8 @@ def send_appointment_cancelled_email(appointment_id):
         if hasattr(appointment_date, 'strftime'):
             appointment_date = appointment_date.strftime('%d-%m-%Y')
 
-        if hasattr(appointment_time, 'strftime'):
-            appointment_time = appointment_time.strftime('%I:%M %p')
-        else:
-            appointment_time = str(appointment_time)
+        # TIME columns arrive as timedelta; format once as 'hh:mm AM/PM'.
+        appointment_time = get_12hr_time(appointment_time)
 
         # Any queue number issued for this visit went away with it.
         cursor.execute(
@@ -7144,11 +7644,20 @@ def api_book_appointment():
             cursor.close()
             return jsonify({'success': False, 'message': 'Invalid appointment date or time'}), 400
 
-        if book_date < datetime.now().date():
+        now = local_now()
+        if book_date < now.date():
             cursor.close()
             return jsonify({'success': False, 'message': 'Cannot book an appointment in the past'}), 400
 
-        available_slots = get_slots_for_date(doctor, date_str)
+        # Today's elapsed slots are rejected server-side as well.
+        if book_date == now.date() and time_str[:5] <= now.strftime('%H:%M'):
+            cursor.close()
+            return jsonify({
+                'success': False,
+                'message': 'That time has already passed for today. Please choose a future slot.'
+            }), 400
+
+        available_slots = filter_future_slots(get_slots_for_date(doctor, date_str), date_str)
         if not available_slots or time_str not in available_slots:
             cursor.close()
             return jsonify({
@@ -7304,7 +7813,15 @@ def api_approve_appointment():
 
         mysql.connection.commit()
         cursor.close()
-        
+
+        # Mirror the doctor-approve route: send the confirmation email after
+        # the commit. Email failure never changes the API response.
+        if action == 'approve':
+            try:
+                send_appointment_accepted_email(appointment_id)
+            except Exception as email_error:
+                print(f"❌ Confirmation email error: {email_error}")
+
         return jsonify({'success': True, 'message': f'Appointment {action}d successfully', 'new_status': new_status, 'queue_assigned': queue_created}), 200
     except Exception as e:
         return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
@@ -7318,7 +7835,7 @@ def api_admin_dashboard():
         total_patients = cursor.fetchone()['total']
         cursor.execute('SELECT COUNT(*) as total FROM Doctor')
         total_doctors = cursor.fetchone()['total']
-        today = datetime.now().date()
+        today = local_now().date()
         cursor.execute('SELECT COUNT(*) as total FROM Appointment WHERE date = %s', (today,))
         today_appointments = cursor.fetchone()['total']
         cursor.execute("SELECT COUNT(*) as total FROM Appointment WHERE status = 'Pending'")

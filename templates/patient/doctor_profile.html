@@ -18,9 +18,6 @@
                 {% if doctor.department_name %}
                 <p><strong>Department:</strong> {{ doctor.department_name }}</p>
                 {% endif %}
-                {% if doctor.qualification %}
-                <p><strong>Qualification:</strong> {{ doctor.qualification }}</p>
-                {% endif %}
                 <p><strong>Experience:</strong> {{ doctor.experience }} years</p>
                 {% if doctor.license_number %}
                 <p><strong>License Number:</strong> {{ doctor.license_number }}</p>
@@ -28,15 +25,20 @@
                 {% if doctor.consultation_fee %}
                 <p><strong>Consultation Fee:</strong> &#8377;{{ doctor.consultation_fee }}</p>
                 {% endif %}
-                <p><strong>Email:</strong> {{ doctor.email }}</p>
-                <p><strong>Phone:</strong> {{ doctor.phone }}</p>
-                {% if doctor.address %}
-                <p><strong>Clinic Address:</strong> {{ doctor.address }}</p>
-                {% endif %}
+                <p><strong>Email:</strong>
+                    <a href="mailto:{{ doctor.email }}">{{ doctor.email }}</a>
+                </p>
+                <p><strong>Phone:</strong> {{ doctor.phone or 'Not provided' }}</p>
                 <p>
                     <strong>Availability Status:</strong>
-                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
-                        {{ doctor.availability_status }}
+                    <span class="badge badge-{{ 'approved' if availability_info.status == 'Available' else 'rejected' }}"
+                          data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ availability_info.label }}</span>
+                    <span class="availability-note" data-availability-note>
+                        {% if availability_info.status == 'Available' %}
+                            {{ availability_info.reason }}{% if availability_info.until %} until {{ availability_info.until }}{% endif %}
+                        {% else %}
+                            {{ availability_info.reason }}{% if availability_info.next %} &middot; Next: {{ availability_info.next }}{% endif %}
+                        {% endif %}
                     </span>
                 </p>
             </div>
@@ -50,6 +52,10 @@
         <!-- Availability -->
         <div class="dashboard-section">
             <h2><i class="fas fa-calendar-alt"></i> Availability</h2>
+
+            {% if working_hours %}
+            <p class="results-count"><strong>Working hours:</strong> {{ working_hours }}</p>
+            {% endif %}
 
             {% if schedule_summary %}
             <p class="results-count"><strong>Working days:</strong> {{ schedule_summary }}</p>
@@ -112,4 +118,8 @@
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor-availability.js') }}"></script>
 {% endblock %}

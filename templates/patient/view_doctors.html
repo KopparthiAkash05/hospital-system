@@ -55,27 +55,32 @@
     <!-- Doctors Grid -->
     <div class="doctors-grid">
         {% for doctor in doctors %}
-        <div class="doctor-card">
+        <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}">
             <div class="doctor-avatar">
                 <i class="fas fa-user-md"></i>
             </div>
             <div class="doctor-info">
                 <h3>Dr. {{ doctor.name }}</h3>
                 <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
-                {% if doctor.department_name %}
+                {% if doctor.department_name and doctor.department_name != doctor.specialization %}
                 <p><i class="fas fa-building"></i> {{ doctor.department_name }}</p>
                 {% endif %}
                 <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
-                {% if doctor.qualification %}
-                <p><i class="fas fa-graduation-cap"></i> {{ doctor.qualification }}</p>
-                {% endif %}
-                <p><i class="fas fa-envelope"></i> {{ doctor.email }}</p>
-                <p><i class="fas fa-phone"></i> {{ doctor.phone }}</p>
-                <p><i class="fas fa-clock"></i> {{ doctor.available_slots or 'Schedule on profile' }}</p>
-                <p>
+                <p><i class="fas fa-envelope"></i>
+                    <a href="mailto:{{ doctor.email }}">{{ doctor.email }}</a>
+                </p>
+                <p><i class="fas fa-phone"></i> {{ doctor.phone or 'Not provided' }}</p>
+                <p><i class="fas fa-clock"></i> {{ doctor.working_hours or doctor.available_slots or 'Schedule on profile' }}</p>
+                <p class="doctor-status">
                     <i class="fas fa-circle"></i>
-                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
-                        {{ doctor.availability_status or 'Available' }}
+                    <span class="badge badge-{{ 'approved' if doctor.availability.status == 'Available' else 'rejected' }}"
+                          data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ doctor.availability.label }}</span>
+                    <span class="availability-note" data-availability-note>
+                        {% if doctor.availability.status == 'Available' %}
+                            {{ doctor.availability.reason }}{% if doctor.availability.until %} until {{ doctor.availability.until }}{% endif %}
+                        {% else %}
+                            {{ doctor.availability.reason }}{% if doctor.availability.next %} &middot; Next: {{ doctor.availability.next }}{% endif %}
+                        {% endif %}
                     </span>
                     {% if doctor.consultation_fee %}
                     <span class="badge badge-approved">&#8377;{{ doctor.consultation_fee }}</span>
@@ -104,4 +109,8 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor-availability.js') }}"></script>
 {% endblock %}

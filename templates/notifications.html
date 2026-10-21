@@ -45,7 +45,7 @@
                                 {% endif %}
                             </h3>
                             <p><i class="fas fa-envelope"></i> {{ note.message }}</p>
-                            <p><i class="fas fa-clock"></i> {{ note.created_at }}</p>
+                            <p><i class="fas fa-clock"></i> {{ note.created_at|dt12 }}</p>
                             {% if note.appointment_date %}
                             <p><i class="fas fa-calendar"></i> Visit: {{ note.appointment_date }}
                                 {% if note.appointment_time_formatted %} at {{ note.appointment_time_formatted }}{% endif %}

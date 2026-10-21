@@ -325,6 +325,12 @@
     box-sizing: border-box;
 }
 
+/* The `hidden` attribute must win over component display rules (a grid item
+   that sets `display: flex` would otherwise stay visible when hidden). */
+[hidden] {
+    display: none !important;
+}
+
 html {
     -webkit-text-size-adjust: 100%;
 }
@@ -338,6 +344,15 @@ body {
     background-color: var(--bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Sticky footer: main grows so the footer always sits at the bottom of the
+   viewport on short pages, and at the end of the document on long ones. */
+main {
+    flex: 1 0 auto;
 }
 
 h1,
@@ -498,6 +513,9 @@ canvas {
     min-height: var(--navbar-height);
     padding-top: var(--space-2);
     padding-bottom: var(--space-2);
+    /* Brand hugs the top-left corner instead of sitting inside the
+       page-wide container gutter. */
+    padding-left: var(--space-2);
 }
 
 /* Left cluster: brand + theme toggle pinned to the top-left corner. */
@@ -1243,9 +1261,20 @@ textarea:disabled {
     color: var(--text-secondary);
 }
 
+/* Trailing "about" copy under the Visit-hospital cards: normal spacing so it
+   never slides underneath the Email / Opening Hours cards above it. */
+.hospital-about {
+    max-width: 720px;
+    margin: var(--space-10) auto 0;
+    text-align: center;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+}
+
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
     gap: var(--space-6);
 }
 
@@ -1301,7 +1330,7 @@ textarea:disabled {
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: var(--space-6);
     margin-bottom: var(--space-10);
     text-align: center;
@@ -1586,12 +1615,15 @@ textarea:disabled {
 
 .dashboard-grid {
     display: grid;
+    /* Clamp the track to the container: auto tracks would otherwise size to
+       the sections' max-content and overflow small screens. */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-6);
 }
 
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: var(--space-6);
     margin-bottom: var(--space-10);
 }
@@ -1660,6 +1692,7 @@ textarea:disabled {
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--space-8);
+    min-width: 0;
 }
 
 .dashboard-section h2 {
@@ -1676,6 +1709,98 @@ textarea:disabled {
 .dashboard-section h2 i {
     font-size: var(--fs-sm);
     color: var(--accent-600);
+}
+
+/* Section heading row: the title on the left, inline tools (search) on the
+   right end of the same line. */
+.dashboard-section .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--border);
+}
+
+/* The heading itself carries no rule of its own here: the row owns the
+   divider so it stretches past the search box. */
+.dashboard-section .section-head h2 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* Controls cluster at the right end of a section heading. */
+.section-options {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+/* Compact search field that sits at the right end of a section heading. */
+.section-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.section-search-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.section-search-field > i {
+    position: absolute;
+    left: var(--space-3);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.section-search input[type="search"] {
+    width: 220px;
+    min-height: 38px;
+    padding-left: 32px;
+    padding-right: 30px;
+    font-size: var(--fs-sm);
+}
+
+/* The native clear affordance is replaced by our own button. */
+.section-search input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.section-search-clear {
+    position: absolute;
+    right: var(--space-2);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    font-size: var(--fs-xs);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.section-search-clear:hover {
+    background: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.section-search-field.has-value .section-search-clear {
+    display: inline-flex;
 }
 
 /* --------------------------------------------------------------------------
@@ -1732,6 +1857,8 @@ textarea:disabled {
     font-size: var(--fs-sm);
     color: var(--text-secondary);
     margin-bottom: var(--space-1);
+    /* Long emails/URLs must not raise the card's min-content above the grid track. */
+    overflow-wrap: anywhere;
 }
 
 .doctor-info p i {
@@ -1776,14 +1903,110 @@ textarea:disabled {
     color: var(--danger-700);
 }
 
+/* Live availability row on the doctor cards: status badge plus a short note. */
+.doctor-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.doctor-status > i {
+    color: var(--text-muted);
+}
+
+.availability-note {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-normal, 400);
+    color: var(--text-muted);
+}
+
+/* Doctor list inside a department card on the departments page. */
+.department-doctors {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.department-doctor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+}
+
+.department-doctor > a {
+    font-weight: var(--fw-semibold, 600);
+}
+
+.department-doctor-hours {
+    width: 100%;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
 .doctor-info p.distance {
     flex-wrap: wrap;
 }
 
 .doctors-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
     gap: var(--space-6);
+}
+
+/* Department cards: 4 per row on wide screens, stepping down to 3 / 2 / 1. */
+.departments-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-6);
+}
+
+@media (max-width: 1100px) {
+    .departments-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Departments on the patient dashboard: three departments per row. */
+.departments-grid--dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.departments-grid--dashboard .department-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.department-card .appointment-actions {
+    margin-top: 0;
+}
+
+/* Department description and its check-up information. */
+.appointment-info p.department-about,
+.appointment-info p.department-checkup {
+    align-items: flex-start;
+    line-height: 1.5;
+    margin-bottom: var(--space-2);
+}
+
+.appointment-info p.department-about i,
+.appointment-info p.department-checkup i {
+    margin-top: 1px;
+    color: var(--accent-600);
+}
+
+.appointment-info p.department-checkup {
+    color: var(--text-primary);
+    font-weight: var(--fw-medium);
 }
 
 .doctors-list {
@@ -1799,7 +2022,7 @@ textarea:disabled {
 
 .quick-links {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
     gap: var(--space-6);
 }
 
@@ -1834,7 +2057,7 @@ textarea:disabled {
 
 .appointments-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
     gap: var(--space-4);
 }
 
@@ -2105,7 +2328,7 @@ textarea:disabled {
 
 .search-form .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: var(--space-5);
     align-items: end;
 }
@@ -2274,7 +2497,7 @@ textarea:disabled {
 }
 
 .booking-step .doctors-grid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
     gap: var(--space-4);
 }
 
@@ -2500,7 +2723,7 @@ textarea:disabled {
    -------------------------------------------------------------------------- */
 .admin-metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: var(--space-6);
     margin-bottom: var(--space-10);
 }
@@ -2514,6 +2737,8 @@ textarea:disabled {
     border: 1px solid var(--border);
     background: var(--surface);
     box-shadow: var(--shadow-sm);
+    /* Long sender addresses must not raise the card's min-content above the track. */
+    overflow-wrap: anywhere;
 }
 
 .metric-card--accent {
@@ -2571,7 +2796,7 @@ textarea:disabled {
 
 .chart-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
     gap: var(--space-6);
     margin-bottom: var(--space-8);
 }
@@ -2600,7 +2825,7 @@ textarea:disabled {
 
 .email-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: var(--space-6);
     margin-top: var(--space-6);
 }
@@ -2617,7 +2842,7 @@ textarea:disabled {
 
 .footer-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: var(--space-8);
     margin-bottom: var(--space-8);
 }
@@ -2913,13 +3138,31 @@ textarea:disabled {
     .auth-container {
         min-height: 0;
     }
-}
 
-@media (max-width: 900px) {
     .nav-menu {
         gap: 0;
     }
 
+    .nav-menu a {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .filter-form {
+        flex-wrap: wrap;
+    }
+
+    .filter-form .form-group {
+        min-width: 200px;
+        flex: 1 1 200px;
+    }
+
+    /* Two departments per row once three no longer fit comfortably. */
+    .departments-grid--dashboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
     .search-form .form-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -3031,6 +3274,38 @@ textarea:disabled {
         grid-template-columns: 1fr;
     }
 
+    .departments-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .departments-grid--dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    /* The heading and its search box stack instead of sharing a line. */
+    .dashboard-section .section-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .section-options {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .section-search {
+        flex: 1 1 200px;
+        min-width: 0;
+    }
+
+    .section-search-field {
+        width: 100%;
+    }
+
+    .section-search input[type="search"] {
+        width: 100%;
+    }
+
     .stats-grid,
     .email-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3113,6 +3388,7 @@ textarea:disabled {
     .email-stats,
     .quick-actions,
     .features-grid,
+    .departments-grid,
     .admin-metrics {
         grid-template-columns: 1fr;
     }
@@ -3219,8 +3495,12 @@ body.has-sidebar .sidebar .nav-menu a i {
     opacity: 0.9;
 }
 
-/* Page content (flash messages, main, footer) sits to the right of the sidebar. */
+/* Page content (flash messages, main, footer) sits to the right of the sidebar.
+   Flex column so main grows and the footer is pinned to the bottom of the
+   sidebar-sized viewport area even when the page has little content. */
 body.has-sidebar .app-content {
+    display: flex;
+    flex-direction: column;
     margin-left: var(--sidebar-width);
     min-height: calc(100vh - var(--navbar-height));
     padding-top: var(--space-4);

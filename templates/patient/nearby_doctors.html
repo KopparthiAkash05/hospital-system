@@ -58,25 +58,31 @@
         {% if doctors %}
         <div class="doctors-grid">
             {% for doctor in doctors %}
-            <div class="doctor-card">
+            <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}">
                 <div class="doctor-avatar">
                     <i class="fas fa-user-md"></i>
                 </div>
                 <div class="doctor-info">
                     <h3>Dr. {{ doctor.name }}</h3>
                     <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
-                    {% if doctor.qualification %}
-                    <p><i class="fas fa-graduation-cap"></i> {{ doctor.qualification }}</p>
-                    {% endif %}
                     <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
                     {% if doctor.city %}
                     <p><i class="fas fa-city"></i> {{ doctor.city }}</p>
                     {% endif %}
-                    {% if doctor.availability_status %}
-                    <p class="availability availability--{{ 'available' if doctor.availability_status == 'Available' else 'unavailable' }}">
-                        <i class="fas fa-circle"></i> {{ doctor.availability_status }}
-                    </p>
+                    {% if doctor.working_hours %}
+                    <p><i class="fas fa-clock"></i> {{ doctor.working_hours }}</p>
                     {% endif %}
+                    <p class="availability availability--{{ 'available' if doctor.availability.status == 'Available' else 'unavailable' }}">
+                        <i class="fas fa-circle"></i>
+                        <span data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ doctor.availability.label }}</span>
+                        <span class="availability-note" data-availability-note>
+                            {% if doctor.availability.status == 'Available' %}
+                                {{ doctor.availability.reason }}{% if doctor.availability.until %} until {{ doctor.availability.until }}{% endif %}
+                            {% else %}
+                                {{ doctor.availability.reason }}{% if doctor.availability.next %} &middot; Next: {{ doctor.availability.next }}{% endif %}
+                            {% endif %}
+                        </span>
+                    </p>
                     {% if doctor.distance_km is defined and doctor.distance_km is not none %}
                     <p class="distance">
                         <i class="fas fa-route"></i> ~{{ doctor.distance_km }} km away
@@ -147,4 +153,8 @@ function flashMessage(message, type) {
     }, 5000);
 }
 </script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor-availability.js') }}"></script>
 {% endblock %}

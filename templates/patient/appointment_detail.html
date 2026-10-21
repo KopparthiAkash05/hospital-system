@@ -37,9 +37,6 @@
             <div class="doctor-summary">
                 <p><strong>Phone:</strong> {{ appointment.doctor_phone or 'N/A' }}</p>
                 <p><strong>Email:</strong> {{ appointment.doctor_email or 'N/A' }}</p>
-                {% if appointment.qualification %}
-                <p><strong>Qualification:</strong> {{ appointment.qualification }}</p>
-                {% endif %}
                 {% if appointment.consultation_fee %}
                 <p><strong>Consultation Fee:</strong> &#8377;{{ appointment.consultation_fee }}</p>
                 {% endif %}

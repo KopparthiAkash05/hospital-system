@@ -21,7 +21,7 @@
     {% if doctors %}
     <div class="doctors-grid">
         {% for doctor in doctors %}
-        <div class="doctor-card">
+        <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}">
             <div class="doctor-avatar">
                 <i class="fas fa-user-md"></i>
             </div>
@@ -29,13 +29,22 @@
                 <h3>Dr. {{ doctor.name }}</h3>
                 <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
                 <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                {% if doctor.working_hours %}
+                <p><i class="fas fa-clock"></i> {{ doctor.working_hours }}</p>
+                {% endif %}
                 {% if doctor.consultation_fee %}
                 <p><i class="fas fa-rupee-sign"></i> &#8377;{{ doctor.consultation_fee }} consultation</p>
                 {% endif %}
                 <p>
                     <i class="fas fa-circle"></i>
-                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
-                        {{ doctor.availability_status }}
+                    <span class="badge badge-{{ 'approved' if doctor.availability.status == 'Available' else 'rejected' }}"
+                          data-availability-badge data-doctor-id="{{ doctor.doctor_id }}">{{ doctor.availability.label }}</span>
+                    <span class="availability-note" data-availability-note>
+                        {% if doctor.availability.status == 'Available' %}
+                            {{ doctor.availability.reason }}{% if doctor.availability.until %} until {{ doctor.availability.until }}{% endif %}
+                        {% else %}
+                            {{ doctor.availability.reason }}{% if doctor.availability.next %} &middot; Next: {{ doctor.availability.next }}{% endif %}
+                        {% endif %}
                     </span>
                 </p>
             </div>
@@ -57,4 +66,8 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor-availability.js') }}"></script>
 {% endblock %}

@@ -74,7 +74,7 @@
                     
                     {% if session.get('user_type') == 'patient' %}
                         <li><a href="{{ url_for('patient_dashboard') }}" class="{% if request.endpoint == 'patient_dashboard' %}active{% endif %}"><i class="fas fa-gauge-high" aria-hidden="true"></i>Dashboard</a></li>
-                       <!--  <li><a href="{{ url_for('patient_departments') }}" class="{% if request.endpoint in ['patient_departments', 'patient_department_detail'] %}active{% endif %}">Departments</a></li> -->
+                        <li><a href="{{ url_for('patient_departments') }}" class="{% if request.endpoint in ['patient_departments', 'patient_department_detail'] %}active{% endif %}"><i class="fas fa-layer-group" aria-hidden="true"></i>All Departments</a></li>
                         <li><a href="{{ url_for('view_doctors') }}" class="{% if request.endpoint in ['view_doctors', 'doctor_profile'] %}active{% endif %}"><i class="fas fa-user-doctor" aria-hidden="true"></i>Find Doctors</a></li>
                        <!--  <li><a href="{{ url_for('patient_book_appointment_page') }}" class="{% if request.endpoint == 'patient_book_appointment_page' %}active{% endif %}">Book Appointment</a></li> -->
                         <li><a href="{{ url_for('patient_appointments') }}" class="{% if request.endpoint in ['patient_appointments', 'patient_appointment_detail', 'reschedule_appointment'] %}active{% endif %}"><i class="fas fa-calendar-check" aria-hidden="true"></i>My Appointments</a></li>
@@ -289,5 +289,6 @@
 </script>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -17,9 +17,6 @@
             <p><strong>Department:</strong> {{ doctor.department_name }}</p>
             {% endif %}
             <p><strong>Experience:</strong> {{ doctor.experience }} years</p>
-            {% if doctor.qualification %}
-            <p><strong>Qualification:</strong> {{ doctor.qualification }}</p>
-            {% endif %}
             {% if doctor.consultation_fee %}
             <p><strong>Consultation Fee:</strong> &#8377;{{ doctor.consultation_fee }}</p>
             {% endif %}
@@ -40,7 +37,7 @@
             <option value="{{ slot['24h'] }}">{{ slot['12h'] }}</option>
         {% endfor %}
     </select>
-    <small class="text-muted" id="slotHint">* Available Monday to Saturday only</small>
+    <small class="text-muted" id="slotHint">{{ slots_hint or '* Available Monday to Saturday only' }}</small>
 </div>
             
             <div class="form-group">
