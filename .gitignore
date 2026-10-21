@@ -1,4 +1,5 @@
 details.env
 .env
+*.sql
 __pycache__/
 *.pyc
