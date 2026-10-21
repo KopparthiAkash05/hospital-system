@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Administrators - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user-shield"></i> Administrator Accounts</h1>
+        <p>Create and manage the accounts that can access this panel.</p>
+    </div>
+
+    <div class="dashboard-section">
+        <h2><i class="fas fa-user-plus"></i> Add Administrator</h2>
+        <form method="POST" action="{{ url_for('admin_add_admin') }}" class="settings-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Name</label>
+                    <input type="text" name="name" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" name="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" name="password" id="password" required minlength="6">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Account
+            </button>
+        </form>
+    </div>
+
+    <div class="dashboard-section">
+        <h2><i class="fas fa-users-cog"></i> Existing Administrators</h2>
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                    <tr>
+                        <td>{{ admin.admin_id }}</td>
+                        <td>
+                            <strong>{{ admin.name }}</strong>
+                            {% if admin.admin_id == current_admin_id %}<br><small>You</small>{% endif %}
+                        </td>
+                        <td>{{ admin.email }}</td>
+                            <td>{{ admin.created_at|dt12 }}</td>
+                        <td>
+                            {% if admin.is_active %}
+                            <span class="badge badge-approved">Active</span>
+                            {% else %}
+                            <span class="badge badge-cancelled">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="appointment-actions">
+                                {% if admin.admin_id == current_admin_id %}
+                                <span class="badge badge-pending">Current session</span>
+                                {% else %}
+                                <form action="{{ url_for('admin_toggle_admin', admin_id=admin.admin_id) }}" method="POST">
+                                    <button type="submit" class="btn btn-{{ 'warning' if admin.is_active else 'success' }} btn-sm"
+                                            onclick="return confirm('{{ 'Deactivate' if admin.is_active else 'Activate' }} this administrator?')">
+                                        <i class="fas fa-{{ 'ban' if admin.is_active else 'check' }}"></i>
+                                        {{ 'Deactivate' if admin.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">No administrators found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

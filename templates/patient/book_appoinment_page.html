@@ -10,19 +10,39 @@
     </div>
     
     <div class="booking-container">
-        <!-- Step 1: Select Doctor -->
+        <!-- Step 1: Select Department -->
         <div class="booking-step">
-            <h2><i class="fas fa-user-md"></i> Step 1: Choose a Doctor</h2>
-            <div class="doctors-grid">
+            <h2><i class="fas fa-building"></i> Step 1: Choose a Department</h2>
+            <div class="filter-section">
+                <select id="departmentFilter">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.name|e }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-hint">Narrow the list, or pick a doctor directly below.</small>
+            </div>
+        </div>
+
+        <!-- Step 2: Select Doctor -->
+        <div class="booking-step">
+            <h2><i class="fas fa-user-md"></i> Step 2: Choose a Doctor</h2>
+            <div class="doctors-grid" id="doctorGrid">
                 {% for doctor in doctors %}
-                <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}" data-doctor-name="{{ doctor.name|e }}">
+                <div class="doctor-card" data-doctor-id="{{ doctor.doctor_id }}" data-doctor-name="{{ doctor.name|e }}" data-department="{{ doctor.department_name|e }}">
                     <div class="doctor-avatar">
                         <i class="fas fa-user-md"></i>
                     </div>
                     <div class="doctor-info">
                         <h3>Dr. {{ doctor.name }}</h3>
                         <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                        {% if doctor.department_name %}
+                        <p><i class="fas fa-building"></i> {{ doctor.department_name }}</p>
+                        {% endif %}
                         <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                        {% if doctor.consultation_fee %}
+                        <p><i class="fas fa-rupee-sign"></i> &#8377;{{ doctor.consultation_fee }} consultation</p>
+                        {% endif %}
                     </div>
                     <div class="select-indicator">
                         <i class="fas fa-check-circle"></i>
@@ -32,9 +52,9 @@
             </div>
         </div>
         
-        <!-- Step 2: Select Date & Time -->
+        <!-- Step 3: Select Date & Time -->
         <div class="booking-step" id="datetimeStep" style="display: none;">
-            <h2><i class="fas fa-calendar-alt"></i> Step 2: Select Date & Time</h2>
+            <h2><i class="fas fa-calendar-alt"></i> Step 3: Select Date & Time</h2>
             <div id="selectedDoctorInfo" class="selected-doctor-info"></div>
             
             <form method="POST" action="{{ url_for('patient_book_appointment_page') }}" id="bookingForm" class="booking-form" onsubmit="return validateBooking()">
@@ -53,9 +73,15 @@
             <option value="{{ slot['24h'] }}">{{ slot['12h'] }}</option>
         {% endfor %}
     </select>
-    <small class="text-muted">* Available Monday to Saturday only</small>
+    <small class="text-muted" id="slotHint">* Available Monday to Saturday only</small>
 </div>
                 
+                <div class="form-group">
+                    <label for="reason"><i class="fas fa-note-sticky"></i> Reason for Visit</label>
+                    <textarea name="reason" id="reason" rows="3"
+                              placeholder="Briefly describe your symptoms or reason for the visit"></textarea>
+                </div>
+
                 <button type="submit" class="btn btn-primary btn-lg btn-block">
                     <i class="fas fa-check"></i> Confirm Booking
                 </button>
@@ -68,19 +94,39 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/slot-refresh.js') }}"></script>
 <script>
 // Set minimum date to today
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.getElementById('date');
     const today = new Date().toISOString().split('T')[0];
     dateInput.min = today;
+
+    // Slots belong to the chosen doctor and date, so reload on either change.
+    dateInput.addEventListener('change', function() {
+        const doctorId = document.getElementById('selectedDoctorId').value;
+        if (!this.value || !doctorId) return;
+        refreshTimeSlots('time', 'date', doctorId, null);
+    });
     
     // Add click handlers to all doctor cards
-    document.querySelectorAll('.doctor-card').forEach(card => {
+    document.querySelectorAll('#doctorGrid .doctor-card').forEach(card => {
         card.addEventListener('click', function() {
             selectDoctor(this);
         });
     });
+
+    // Step 1 department filter narrows the doctor cards in step 2.
+    var departmentFilter = document.getElementById('departmentFilter');
+    if (departmentFilter) {
+        departmentFilter.addEventListener('change', function() {
+            var chosen = this.value;
+            document.querySelectorAll('#doctorGrid .doctor-card').forEach(card => {
+                var dept = card.getAttribute('data-department') || '';
+                card.style.display = (!chosen || dept === chosen) ? '' : 'none';
+            });
+        });
+    }
 });
 
 function selectDoctor(element) {
@@ -103,6 +149,14 @@ function selectDoctor(element) {
     const infoDiv = document.getElementById('selectedDoctorInfo');
     infoDiv.innerHTML = `<h3><i class="fas fa-user-md"></i> Selected: Dr. ${doctorName}</h3>`;
     
+    // Load this doctor's real slots when a date is already chosen.
+    const dateValue = document.getElementById('date').value;
+    if (dateValue) {
+        refreshTimeSlots('time', 'date', doctorId, null);
+    } else {
+        document.getElementById('time').innerHTML = '<option value="">-- Select a date first --</option>';
+    }
+
     // Show date/time selection
     document.getElementById('datetimeStep').style.display = 'block';
     

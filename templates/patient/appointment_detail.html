@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Details - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-check"></i> Appointment #{{ appointment.appointment_id }}</h1>
+        <p>
+            Dr. {{ appointment.doctor_name }} &middot;
+            <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+        </p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-section">
+            <h2><i class="fas fa-info-circle"></i> Visit Details</h2>
+            <div class="doctor-summary">
+                <p><strong>Doctor:</strong> Dr. {{ appointment.doctor_name }}</p>
+                <p><strong>Specialization:</strong> {{ appointment.specialization or 'N/A' }}</p>
+                {% if appointment.department_name %}
+                <p><strong>Department:</strong> {{ appointment.department_name }}</p>
+                {% endif %}
+                <p><strong>Date:</strong> {{ appointment.date }}</p>
+                <p><strong>Time:</strong> {{ appointment.time_formatted }}</p>
+                <p><strong>Status:</strong> {{ appointment.status }}</p>
+                <p><strong>Reason for visit:</strong> {{ appointment.reason or 'Not provided' }}</p>
+                {% if appointment.follow_up_date %}
+                <p><strong>Follow-up on:</strong> {{ appointment.follow_up_date }}</p>
+                {% endif %}
+                <p><strong>Booked on:</strong> {{ appointment.created_at|dt12 }}</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2><i class="fas fa-user-md"></i> Doctor Contact</h2>
+            <div class="doctor-summary">
+                <p><strong>Phone:</strong> {{ appointment.doctor_phone or 'N/A' }}</p>
+                <p><strong>Email:</strong> {{ appointment.doctor_email or 'N/A' }}</p>
+                {% if appointment.qualification %}
+                <p><strong>Qualification:</strong> {{ appointment.qualification }}</p>
+                {% endif %}
+                {% if appointment.consultation_fee %}
+                <p><strong>Consultation Fee:</strong> &#8377;{{ appointment.consultation_fee }}</p>
+                {% endif %}
+            </div>
+
+            <div class="doctor-actions mt-4">
+                <a href="{{ url_for('doctor_profile', doctor_id=appointment.doctor_id) }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-id-card"></i> View Doctor Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if appointment.status in ['Pending', 'Approved'] %}
+    <div class="quick-actions">
+        <a href="{{ url_for('reschedule_appointment', appointment_id=appointment.appointment_id) }}" class="action-card">
+            <i class="fas fa-calendar-alt"></i>
+            <h3>Reschedule</h3>
+            <p>Move this visit to a different date or time</p>
+        </a>
+        <a href="{{ url_for('cancel_appointment', appointment_id=appointment.appointment_id) }}" class="action-card"
+           onclick="return confirm('Are you sure you want to cancel this appointment?')">
+            <i class="fas fa-times"></i>
+            <h3>Cancel Appointment</h3>
+            <p>This releases the slot for others</p>
+        </a>
+    </div>
+    {% elif appointment.status == 'Completed' %}
+    <div class="quick-actions">
+        {% if prescription_id %}
+        <a href="{{ url_for('patient_prescription_detail', prescription_id=prescription_id) }}" class="action-card">
+            <i class="fas fa-file-prescription"></i>
+            <h3>View Prescription</h3>
+            <p>See the medicines prescribed after this visit</p>
+        </a>
+        {% endif %}
+        {% if feedback_id %}
+        <a href="{{ url_for('patient_feedback') }}" class="action-card">
+            <i class="fas fa-star"></i>
+            <h3>Your Feedback</h3>
+            <p>You have already reviewed this visit</p>
+        </a>
+        {% else %}
+        <a href="{{ url_for('patient_feedback', appointment_id=appointment.appointment_id) }}" class="action-card">
+            <i class="fas fa-star"></i>
+            <h3>Leave Feedback</h3>
+            <p>Rate this visit and help other patients</p>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="filter-section">
+        <a href="{{ url_for('patient_appointments') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Back to My Appointments
+        </a>
+    </div>
+</div>
+{% endblock %}

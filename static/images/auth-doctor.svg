@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Doctor illustration">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#1d4ed8"/>
+            <stop offset="0.55" stop-color="#4338ca"/>
+            <stop offset="1" stop-color="#6d28d9"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="0.25" cy="0.15" r="0.85">
+            <stop offset="0" stop-color="#93c5fd" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="#93c5fd" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="emblem" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
+            <stop offset="1" stop-color="#e0e7ff" stop-opacity="0.9"/>
+        </linearGradient>
+    </defs>
+
+    <rect width="900" height="1200" fill="url(#bg)"/>
+    <rect width="900" height="1200" fill="url(#glow)"/>
+
+    <circle cx="160" cy="220" r="240" fill="#ffffff" opacity="0.05"/>
+    <circle cx="780" cy="940" r="280" fill="#ffffff" opacity="0.05"/>
+    <circle cx="150" cy="1020" r="150" fill="#ffffff" opacity="0.06"/>
+
+    <g stroke="#c7d2fe" stroke-width="3" opacity="0.32" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M40 260 h110 l26 -60 l38 120 l30 -96 l24 36 h120"/>
+        <path d="M560 1040 h100 l24 -54 l34 108 l28 -86 l22 32 h110"/>
+    </g>
+
+    <g opacity="0.85">
+        <rect x="740" y="300" width="66" height="66" rx="14" fill="#ffffff" opacity="0.8"/>
+        <rect x="767" y="315" width="12" height="36" rx="6" fill="#4338ca"/>
+        <rect x="755" y="327" width="36" height="12" rx="6" fill="#4338ca"/>
+    </g>
+
+    <g transform="translate(450 560)">
+        <circle r="215" fill="#ffffff" opacity="0.08"/>
+        <circle r="152" fill="url(#emblem)"/>
+        <path d="M-40 -86 v70 a40 40 0 0 0 80 0 v-70" fill="none" stroke="#4338ca" stroke-width="14" stroke-linecap="round"/>
+        <path d="M-40 -86 h-24 M40 -86 h24" stroke="#4338ca" stroke-width="14" stroke-linecap="round"/>
+        <path d="M0 24 v42 a44 44 0 0 0 88 0 v-30" fill="none" stroke="#4338ca" stroke-width="14" stroke-linecap="round"/>
+        <circle cx="88" cy="20" r="25" fill="#6d28d9"/>
+        <circle cx="88" cy="20" r="11" fill="#e0e7ff"/>
+    </g>
+
+    <g fill="#ffffff" opacity="0.14">
+        <circle cx="620" cy="700" r="9"/>
+        <circle cx="670" cy="760" r="6"/>
+        <circle cx="580" cy="790" r="8"/>
+        <circle cx="270" cy="640" r="7"/>
+        <circle cx="220" cy="700" r="10"/>
+    </g>
+</svg>

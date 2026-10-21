@@ -3,7 +3,18 @@
 {% block title %}Doctor Registration{% endblock %}
 
 {% block content %}
-<div class="auth-container">
+<div class="auth-container auth-container--split">
+  <div class="auth-split">
+    <aside class="auth-visual auth-visual--doctor">
+        <span class="auth-visual-badge"><i class="fas fa-user-md"></i> Doctor Registration</span>
+        <h2>Join our medical team</h2>
+        <p>Register your practice and start seeing patients through MediCare.</p>
+        <ul class="auth-visual-list">
+            <li><i class="fas fa-stethoscope"></i> Showcase your specialisation</li>
+            <li><i class="fas fa-calendar-day"></i> Publish your availability</li>
+            <li><i class="fas fa-users"></i> Reach more patients</li>
+        </ul>
+    </aside>
     <div class="auth-card">
         <div class="auth-header">
             <i class="fas fa-user-md"></i>
@@ -65,9 +76,43 @@
             </div>
             
             <div class="form-group">
+                <label for="department_id"><i class="fas fa-building"></i> Department</label>
+                <select name="department_id" id="department_id">
+                    <option value="">-- Not assigned --</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.department_id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-hint">Leave blank if you are not in a specific department yet.</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="qualification"><i class="fas fa-graduation-cap"></i> Qualification</label>
+                    <input type="text" name="qualification" id="qualification" placeholder="e.g., MBBS, MD">
+                </div>
+
+                <div class="form-group">
+                    <label for="license_number"><i class="fas fa-id-badge"></i> License Number</label>
+                    <input type="text" name="license_number" id="license_number" placeholder="Medical licence no.">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="consultation_fee"><i class="fas fa-rupee-sign"></i> Consultation Fee</label>
+                <input type="number" name="consultation_fee" id="consultation_fee" placeholder="e.g., 500" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="profile_description"><i class="fas fa-align-left"></i> Profile Description</label>
+                <textarea name="profile_description" id="profile_description" rows="3" placeholder="A short summary shown on your public profile"></textarea>
+            </div>
+
+            <div class="form-group">
                 <label for="available_slots"><i class="fas fa-clock"></i> Available Slots</label>
                 <input type="text" name="available_slots" id="available_slots" required placeholder="Mon-Fri: 9AM-5PM">
                 <small class="form-text">Example: Mon-Fri: 9AM-5PM, Sat: 10AM-2PM</small>
+                <small class="form-hint">You can set exact per-day hours from the Schedule page after logging in.</small>
             </div>
             <div class="form-group">
     <label for="address"><i class="fas fa-map-marker-alt"></i> Clinic Address</label>
@@ -88,8 +133,10 @@
         <div class="auth-footer">
             <p>Already have an account? <a href="{{ url_for('doctor_login') }}">Login here</a></p>
             <p>Patient? <a href="{{ url_for('register') }}">Register as Patient</a></p>
+            <p>Admin? <a href="{{ url_for('admin_register') }}">Register as Admin</a></p>
         </div>
     </div>
+  </div>
 </div>
 
 {% endblock %}

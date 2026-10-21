@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars_display, rating_distribution %}
+
+{% block title %}Feedback Management - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-star"></i> Feedback Management</h1>
+        <p>All patient reviews across the hospital, with moderation controls</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid mb-8">
+        <div class="stat-card primary">
+            <i class="fas fa-comments"></i>
+            <h3>{{ stats.total }}</h3>
+            <p>Total Reviews</p>
+        </div>
+        <div class="stat-card success">
+            <i class="fas fa-star"></i>
+            <h3>{{ '%.1f'|format(stats.average) if stats.total else '0.0' }}</h3>
+            <p>Average Rating (out of 5)</p>
+        </div>
+        <div class="stat-card warning">
+            <i class="fas fa-eye-slash"></i>
+            <h3>{{ hidden_count }}</h3>
+            <p>Hidden Reviews</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-eye"></i>
+            <h3>{{ stats.total - hidden_count }}</h3>
+            <p>Visible Reviews</p>
+        </div>
+    </div>
+
+    {% if stats.total %}
+    <div class="dashboard-section">
+        <h2><i class="fas fa-chart-bar"></i> Rating Distribution</h2>
+        <div class="panel">
+            {{ rating_distribution(distribution, stats.total, rating_labels) }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_feedback') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Patient, doctor or comment"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="rating"><i class="fas fa-filter"></i> Rating</label>
+                    <select name="rating" id="rating">
+                        <option value="">All Ratings</option>
+                        {% for value, label in rating_labels.items()|sort(reverse=true) %}
+                        <option value="{{ value }}" {% if selected_rating == value %}selected{% endif %}>
+                            {{ value }} &mdash; {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date_from"><i class="fas fa-calendar"></i> From</label>
+                    <input type="date" name="date_from" id="date_from"
+                           value="{{ date_from if date_from else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="date_to"><i class="fas fa-calendar"></i> To</label>
+                    <input type="date" name="date_to" id="date_to"
+                           value="{{ date_to if date_to else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_feedback') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if feedback_list %}
+    <p class="results-count">Found {{ feedback_list|length }} review(s)</p>
+
+    <div class="dashboard-section">
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Appointment</th>
+                        <th>Rating</th>
+                        <th>Comment</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feedback in feedback_list %}
+                    <tr {% if feedback.is_hidden %}class="row-muted"{% endif %}>
+                        <td>{{ feedback.feedback_id }}</td>
+                        <td><strong>{{ feedback.patient_name or '-' }}</strong></td>
+                        <td>
+                            {{ feedback.doctor_name or '-' }}
+                            {% if feedback.appointment_status %}
+                            <br><small>{{ feedback.appointment_status }} visit</small>
+                            {% endif %}
+                        </td>
+                        <td>#{{ feedback.appointment_id }}<br><small>{{ feedback.appointment_date }}</small></td>
+                        <td>
+                            {{ stars_display(feedback.rating) }}
+                            <br><small>{{ rating_labels.get(feedback.rating, '') }}</small>
+                        </td>
+                        <td class="feedback-table-comment">
+                            {{ feedback.comment or '-' }}
+                        </td>
+                        <td>
+                            {{ feedback.created_at.strftime('%d-%m-%Y') }}
+                            {% if feedback.updated_at and feedback.updated_at != feedback.created_at %}
+                            <br><small>edited {{ feedback.updated_at.strftime('%d-%m-%Y') }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if feedback.is_hidden %}
+                            <span class="badge badge-cancelled">Hidden</span>
+                            {% else %}
+                            <span class="badge badge-completed">Visible</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{{ url_for('admin_toggle_feedback', feedback_id=feedback.feedback_id) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('{{ 'Restore this review so patients and doctors can see it again?' if feedback.is_hidden else 'Hide this review from patients and doctors?' }}')">
+                                <button type="submit"
+                                        class="btn {% if feedback.is_hidden %}btn-primary{% else %}btn-danger{% endif %} btn-sm">
+                                    <i class="fas {% if feedback.is_hidden %}fa-eye{% else %}fa-eye-slash{% endif %}"></i>
+                                    {% if feedback.is_hidden %}Restore{% else %}Hide{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-star"></i>
+        <p>No feedback found matching your filters</p>
+        <a href="{{ url_for('admin_feedback') }}" class="btn btn-primary">
+            <i class="fas fa-redo"></i> Clear Filters
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-clipboard-list"></i> Audit Logs</h1>
+        <p>Most recent 500 administrative and appointment actions</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_audit_logs') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="User, description or action"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="action"><i class="fas fa-bolt"></i> Action</label>
+                    <select name="action" id="action">
+                        <option value="">All Actions</option>
+                        {% for item in actions %}
+                        <option value="{{ item }}" {% if action_filter == item %}selected{% endif %}>
+                            {{ item }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="entity"><i class="fas fa-database"></i> Entity</label>
+                    <select name="entity" id="entity">
+                        <option value="">All Entities</option>
+                        {% for item in entities %}
+                        <option value="{{ item }}" {% if entity_filter == item %}selected{% endif %}>
+                            {{ item }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="user_type"><i class="fas fa-user"></i> Role</label>
+                    <select name="user_type" id="user_type">
+                        <option value="">All Roles</option>
+                        <option value="patient" {% if user_type_filter == 'patient' %}selected{% endif %}>Patient</option>
+                        <option value="doctor" {% if user_type_filter == 'doctor' %}selected{% endif %}>Doctor</option>
+                        <option value="admin" {% if user_type_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_audit_logs') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if logs %}
+    <p class="results-count">Found {{ logs|length }} log(s)</p>
+
+    <div class="dashboard-section">
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date &amp; Time</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Entity ID</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.audit_id }}</td>
+                        <td>{{ log.created_at|dt12 }}</td>
+                        <td>
+                            <strong>{{ log.user_name or 'System' }}</strong><br>
+                            <span class="badge badge-pending">{{ (log.user_type or 'system')|title }}</span>
+                        </td>
+                        <td><code>{{ log.action }}</code></td>
+                        <td>{{ log.entity or '-' }}{% if log.entity_id %}<br><small>#{{ log.entity_id }}</small>{% endif %}</td>
+                        <td>{{ log.entity_id or '-' }}</td>
+                        <td>{{ log.description or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No audit entries found</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

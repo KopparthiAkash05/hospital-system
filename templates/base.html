@@ -23,7 +23,8 @@
         })();
     </script>
 </head>
-<body>
+{% set use_sidebar = session.get('loggedin') and session.get('user_type') in ['patient', 'doctor', 'admin'] %}
+<body{% if use_sidebar %} class="has-sidebar"{% endif %}>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
@@ -38,51 +39,89 @@
                 </button>
             </div>
             
-            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-controls="navMenu">
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-controls="navMenu" aria-expanded="false">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
             
+            {% if not session.get('loggedin') %}
             <ul class="nav-menu" id="navMenu">
-                {% if session.get('loggedin') %}
-                    <!-- LOGGED IN USERS -->
-                    
-                    {% if session.get('user_type') == 'patient' %}
-                        <li><a href="{{ url_for('patient_dashboard') }}" class="{% if request.endpoint == 'patient_dashboard' %}active{% endif %}">Dashboard</a></li>
-                        <li><a href="{{ url_for('symptom_checker') }}" class="{% if request.endpoint == 'symptom_checker' %}active{% endif %}">Symptom Checker</a></li>
-                        <li><a href="{{ url_for('nearby_doctors') }}" class="{% if request.endpoint == 'nearby_doctors' %}active{% endif %}">Nearby Doctors</a></li>
-                        <li><a href="{{ url_for('patient_settings') }}" class="{% if request.endpoint == 'patient_settings' %}active{% endif %}">Settings</a></li>
-                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                        
-                    {% elif session.get('user_type') == 'doctor' %}
-                        <li><a href="{{ url_for('doctor_dashboard') }}" class="{% if request.endpoint == 'doctor_dashboard' %}active{% endif %}">Dashboard</a></li>
-                        <li><a href="{{ url_for('doctor_appointments') }}" class="{% if request.endpoint == 'doctor_appointments' %}active{% endif %}">Appointments</a></li>
-                        <li><a href="{{ url_for('manage_schedule') }}" class="{% if request.endpoint == 'manage_schedule' %}active{% endif %}">Schedule</a></li>
-                         <li><a href="{{ url_for('doctor_settings') }}" class="{% if request.endpoint == 'doctor_settings' %}active{% endif %}">Settings</a></li>
-                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                        
-                    {% elif session.get('user_type') == 'admin' %}
-                        <!-- <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Dashboard</a></li>
-                        <li><a href="{{ url_for('admin_doctors') }}" class="{% if request.endpoint == 'admin_doctors' %}active{% endif %}">Doctors</a></li>
-                        <li><a href="{{ url_for('admin_patients') }}" class="{% if request.endpoint == 'admin_patients' %}active{% endif %}">Patients</a></li>
-                        <li><a href="{{ url_for('admin_reports') }}" class="{% if request.endpoint == 'admin_reports' %}active{% endif %}">Reports</a></li> -->
-                        <li><a href="{{ url_for('admin_dashboard') }}">Analytics Dashboard</a></li>
-                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                    {% endif %}
-                    
-                {% else %}
-                    <!-- GUESTS (NOT LOGGED IN) -->
+                <!-- GUESTS (NOT LOGGED IN) -->
                     <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
                     <li><a href="{{ url_for('login') }}" class="{% if request.endpoint == 'login' %}active{% endif %}">Login</a></li>
                     <li><a href="{{ url_for('register') }}" class="{% if request.endpoint == 'register' %}active{% endif %}">Register</a></li>
                     <li><a href="{{ url_for('doctor_login') }}">Doctor Login</a></li>
                     <li><a href="{{ url_for('doctor_register') }}">Doctor Register</a></li>
-                {% endif %}
+                    <li><a href="{{ url_for('admin_login') }}" class="{% if request.endpoint == 'admin_login' %}active{% endif %}">Admin Login</a></li>
+                    <li><a href="{{ url_for('admin_register') }}">Admin Register</a></li>
             </ul>
+            {% endif %}
         </div>
     </nav>
 
+    {% if use_sidebar %}
+    <!-- Left sidebar navigation (patient / doctor / admin) -->
+    <aside class="sidebar" aria-label="Main navigation">
+        <p class="sidebar-role" aria-hidden="true">
+            {% if session.get('user_type') == 'patient' %}Patient Portal
+            {% elif session.get('user_type') == 'doctor' %}Doctor Portal
+            {% elif session.get('user_type') == 'admin' %}Admin Console
+            {% endif %}
+        </p>
+        <ul class="nav-menu" id="navMenu">
+                    <!-- LOGGED IN USERS -->
+                    
+                    {% if session.get('user_type') == 'patient' %}
+                        <li><a href="{{ url_for('patient_dashboard') }}" class="{% if request.endpoint == 'patient_dashboard' %}active{% endif %}"><i class="fas fa-gauge-high" aria-hidden="true"></i>Dashboard</a></li>
+                       <!--  <li><a href="{{ url_for('patient_departments') }}" class="{% if request.endpoint in ['patient_departments', 'patient_department_detail'] %}active{% endif %}">Departments</a></li> -->
+                        <li><a href="{{ url_for('view_doctors') }}" class="{% if request.endpoint in ['view_doctors', 'doctor_profile'] %}active{% endif %}"><i class="fas fa-user-doctor" aria-hidden="true"></i>Find Doctors</a></li>
+                       <!--  <li><a href="{{ url_for('patient_book_appointment_page') }}" class="{% if request.endpoint == 'patient_book_appointment_page' %}active{% endif %}">Book Appointment</a></li> -->
+                        <li><a href="{{ url_for('patient_appointments') }}" class="{% if request.endpoint in ['patient_appointments', 'patient_appointment_detail', 'reschedule_appointment'] %}active{% endif %}"><i class="fas fa-calendar-check" aria-hidden="true"></i>My Appointments</a></li>
+                        <li><a href="{{ url_for('patient_prescriptions') }}" class="{% if request.endpoint in ['patient_prescriptions', 'patient_prescription_detail'] %}active{% endif %}"><i class="fas fa-file-prescription" aria-hidden="true"></i>My Prescriptions</a></li>
+                        <li><a href="{{ url_for('patient_feedback') }}" class="{% if request.endpoint == 'patient_feedback' %}active{% endif %}"><i class="fas fa-star" aria-hidden="true"></i>Feedback</a></li>
+                        <li><a href="{{ url_for('patient_notifications') }}" class="{% if request.endpoint == 'patient_notifications' %}active{% endif %}"><i class="fas fa-bell" aria-hidden="true"></i>Notifications</a></li>
+                        <li><a href="{{ url_for('symptom_checker') }}" class="{% if request.endpoint == 'symptom_checker' %}active{% endif %}"><i class="fas fa-stethoscope" aria-hidden="true"></i>Symptom Checker</a></li>
+                        <li><a href="{{ url_for('nearby_doctors') }}" class="{% if request.endpoint == 'nearby_doctors' %}active{% endif %}"><i class="fas fa-location-dot" aria-hidden="true"></i>Nearby Doctors</a></li>
+                        <li><a href="{{ url_for('patient_settings') }}" class="{% if request.endpoint == 'patient_settings' %}active{% endif %}"><i class="fas fa-gear" aria-hidden="true"></i>Settings</a></li>
+                        <li><a href="{{ url_for('logout') }}"><i class="fas fa-right-from-bracket" aria-hidden="true"></i>Logout</a></li>
+                        
+                    {% elif session.get('user_type') == 'doctor' %}
+                        <li><a href="{{ url_for('doctor_dashboard') }}" class="{% if request.endpoint == 'doctor_dashboard' %}active{% endif %}"><i class="fas fa-gauge-high" aria-hidden="true"></i>Dashboard</a></li>
+                        <li><a href="{{ url_for('doctor_appointments') }}" class="{% if request.endpoint in ['doctor_appointments', 'doctor_appointment_detail'] %}active{% endif %}"><i class="fas fa-calendar-check" aria-hidden="true"></i>Appointments</a></li>
+                        <li><a href="{{ url_for('doctor_queue_page') }}" class="{% if request.endpoint and request.endpoint.startswith('doctor_queue') or request.endpoint and request.endpoint.startswith('queue_') %}active{% endif %}"><i class="fas fa-stream" aria-hidden="true"></i>Live Queue</a></li>
+                        <li><a href="{{ url_for('doctor_prescriptions') }}" class="{% if request.endpoint in ['doctor_prescriptions', 'doctor_prescription_new', 'doctor_prescription_create', 'doctor_prescription_detail', 'doctor_prescription_edit', 'doctor_prescription_update'] %}active{% endif %}"><i class="fas fa-file-prescription" aria-hidden="true"></i>Prescriptions</a></li>
+                        <li><a href="{{ url_for('doctor_feedback') }}" class="{% if request.endpoint == 'doctor_feedback' %}active{% endif %}"><i class="fas fa-star" aria-hidden="true"></i>Feedback</a></li>
+                        <li><a href="{{ url_for('manage_schedule') }}" class="{% if request.endpoint == 'manage_schedule' %}active{% endif %}"><i class="fas fa-calendar-days" aria-hidden="true"></i>Schedule</a></li>
+                        <li><a href="{{ url_for('doctor_notifications') }}" class="{% if request.endpoint == 'doctor_notifications' %}active{% endif %}"><i class="fas fa-bell" aria-hidden="true"></i>Notifications</a></li>
+                        <li><a href="{{ url_for('doctor_settings') }}" class="{% if request.endpoint == 'doctor_settings' %}active{% endif %}"><i class="fas fa-gear" aria-hidden="true"></i>Settings</a></li>
+                        <li><a href="{{ url_for('logout') }}"><i class="fas fa-right-from-bracket" aria-hidden="true"></i>Logout</a></li>
+                        
+                    {% elif session.get('user_type') == 'admin' %}
+                        <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}"><i class="fas fa-chart-line" aria-hidden="true"></i>Analytics Dashboard</a></li>
+                        <li><a href="{{ url_for('admin_appointments') }}" class="{% if request.endpoint in ['admin_appointments', 'admin_reports'] %}active{% endif %}"><i class="fas fa-calendar-check" aria-hidden="true"></i>Appointments</a></li>
+                        <li><a href="{{ url_for('admin_follow_ups') }}" class="{% if request.endpoint == 'admin_follow_ups' %}active{% endif %}"><i class="fas fa-rotate-right" aria-hidden="true"></i>Follow-Ups</a></li>
+                        <li><a href="{{ url_for('admin_feedback') }}" class="{% if request.endpoint == 'admin_feedback' %}active{% endif %}"><i class="fas fa-star" aria-hidden="true"></i>Feedback</a></li>
+                        <li><a href="{{ url_for('admin_departments') }}" class="{% if request.endpoint == 'admin_departments' %}active{% endif %}"><i class="fas fa-building" aria-hidden="true"></i>Departments</a></li>
+                        <li><a href="{{ url_for('admin_doctors') }}" class="{% if request.endpoint in ['admin_doctors', 'admin_add_doctor', 'admin_edit_doctor', 'admin_doctor_schedules'] %}active{% endif %}"><i class="fas fa-user-doctor" aria-hidden="true"></i>Doctors</a></li>
+                        <li><a href="{{ url_for('admin_patients') }}" class="{% if request.endpoint in ['admin_patients', 'admin_patient_detail'] %}active{% endif %}"><i class="fas fa-users" aria-hidden="true"></i>Patients</a></li>
+                        <li><a href="{{ url_for('admin_schedules') }}" class="{% if request.endpoint == 'admin_schedules' %}active{% endif %}"><i class="fas fa-calendar-days" aria-hidden="true"></i>Schedules</a></li>
+                        <li><a href="{{ url_for('admin_notifications') }}" class="{% if request.endpoint == 'admin_notifications' %}active{% endif %}"><i class="fas fa-bell" aria-hidden="true"></i>Notifications</a></li>
+                        <li><a href="{{ url_for('admin_audit_logs') }}" class="{% if request.endpoint == 'admin_audit_logs' %}active{% endif %}"><i class="fas fa-clipboard-list" aria-hidden="true"></i>Audit Logs</a></li>
+                        <li><a href="{{ url_for('admin_hospital_info') }}" class="{% if request.endpoint == 'admin_hospital_info' %}active{% endif %}"><i class="fas fa-hospital" aria-hidden="true"></i>Hospital Info</a></li>
+                        <li><a href="{{ url_for('admin_admins') }}" class="{% if request.endpoint in ['admin_admins'] %}active{% endif %}"><i class="fas fa-user-shield" aria-hidden="true"></i>Administrators</a></li>
+                        <li><a href="{{ url_for('admin_email_settings') }}" class="{% if request.endpoint == 'admin_email_settings' %}active{% endif %}"><i class="fas fa-envelope" aria-hidden="true"></i>Email Settings</a></li>
+                        <li><a href="{{ url_for('admin_profile') }}" class="{% if request.endpoint == 'admin_profile' %}active{% endif %}"><i class="fas fa-id-badge" aria-hidden="true"></i>Profile</a></li>
+                        <li><a href="{{ url_for('logout') }}"><i class="fas fa-right-from-bracket" aria-hidden="true"></i>Logout</a></li>
+                    {% endif %}
+                    
+        </ul>
+    </aside>
+    <!-- Dimming backdrop for the mobile sidebar drawer -->
+    <div class="nav-backdrop" id="navBackdrop"></div>
+    {% endif %}
+
+    {% if use_sidebar %}<div class="app-content">{% endif %}
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -116,11 +155,11 @@
                         <li><a href="{{ url_for('index') }}">Home</a></li>
                         <li><a href="{{ url_for('login') }}">Login</a></li>
                         <li><a href="{{ url_for('register') }}">Register</a></li>
+                        <li><a href="{{ url_for('admin_login') }}">Admin Login</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h4>Contact</h4>
-                    <p><i class="fas fa-phone"></i> +1 234 567 890</p>
                     <p><i class="fas fa-envelope"></i> info@smarthospital.com</p>
                 </div>
             </div>
@@ -129,6 +168,7 @@
             </div>
         </div>
     </footer>
+    {% if use_sidebar %}</div>{% endif %}
     <!-- Smart Triage Chatbot UI -->
 <div id="chatbot-container">
     <!-- Floating Button -->
@@ -144,68 +184,107 @@
         </div>
         <div id="chat-messages" aria-live="polite" aria-atomic="false">
             <div class="message bot">
-                Hello! I'm your MediCare assistant. Where does it hurt today?
+                Hello! I'm your MediCare triage assistant. Describe your symptoms in your own
+                words, or ask about nearby doctors, opening hours or contact details.
             </div>
         </div>
         <div id="chat-options" class="chat-options">
-            <!-- Buttons will be injected here by JS -->
+            <!-- Suggested replies are injected here by JS -->
         </div>
+        <form id="chat-form" class="chat-form" onsubmit="return submitChat(event)">
+            <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off"
+                   aria-label="Type a message to the triage assistant">
+            <button type="submit" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+        </form>
     </div>
 </div>
 
 <script>
-    let currentStep = 0;
-    let chatData = {};
+    let chatBusy = false;
 
     function toggleChatbot() {
-        document.getElementById('chatbot-window').classList.toggle('hidden');
-        if (!document.getElementById('chatbot-window').classList.contains('hidden') && currentStep === 0) {
-            showOptions(['Head / Migraine', 'Chest / Breathing', 'Stomach / Digestion', 'Bones / Joints', 'Skin / Allergy']);
+        const win = document.getElementById('chatbot-window');
+        win.classList.toggle('hidden');
+        if (!win.classList.contains('hidden')) {
+            document.getElementById('chat-input').focus();
         }
     }
 
     function appendMessage(text, sender) {
+        const msgs = document.getElementById('chat-messages');
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${sender}`;
         msgDiv.innerText = text;
-        document.getElementById('chat-messages').appendChild(msgDiv);
-        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        msgs.appendChild(msgDiv);
+        msgs.scrollTop = msgs.scrollHeight;
+        return msgDiv;
     }
 
     function showOptions(options) {
         const optionsDiv = document.getElementById('chat-options');
         optionsDiv.innerHTML = '';
-        options.forEach(opt => {
+        (options || []).forEach(opt => {
             const btn = document.createElement('button');
+            btn.type = 'button';
             btn.innerText = opt;
-            btn.onclick = () => handleUserInput(opt);
+            if (opt.toLowerCase() === 'start over') {
+                btn.onclick = startOver;
+            } else {
+                btn.onclick = () => handleUserInput(opt);
+            }
             optionsDiv.appendChild(btn);
         });
     }
 
+    function submitChat(event) {
+        event.preventDefault();
+        const input = document.getElementById('chat-input');
+        const value = input.value.trim();
+        if (!value) return false;
+        input.value = '';
+        handleUserInput(value);
+        return false;
+    }
+
     function handleUserInput(input) {
+        if (chatBusy) return;
+        chatBusy = true;
+
         appendMessage(input, 'user');
-        document.getElementById('chat-options').innerHTML = '<i class="chat-typing">Bot is typing...</i>';
+        const optionsDiv = document.getElementById('chat-options');
+        optionsDiv.innerHTML = '<i class="chat-typing">Bot is typing...</i>';
 
         fetch('/api/chatbot', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ step: currentStep, input: input, ...chatData })
+            body: JSON.stringify({ input: input })
         })
         .then(res => res.json())
+        .catch(() => ({
+            message: "Sorry, I couldn't reach the server just now. Please try again, or use "
+                   + "the hospital contact details on the home page if this is urgent.",
+            options: ['Start over']
+        }))
         .then(data => {
-            setTimeout(() => {
-                appendMessage(data.message, 'bot');
-                currentStep = data.step;
-                chatData = data; // Store department info for next steps
-                
-                if (data.redirect) {
-                    setTimeout(() => window.location.href = data.redirect, 1500);
-                } else if (data.options) {
-                    showOptions(data.options);
-                }
-            }, 600);
-        });
+            appendMessage(data.message || "Sorry, something went wrong.", 'bot');
+
+            if (data.redirect) {
+                showOptions([]);
+                setTimeout(() => window.location.href = data.redirect, 1200);
+            } else {
+                const opts = (data.options && data.options.length)
+                    ? data.options
+                    : ['Start over'];
+                showOptions(opts);
+            }
+        })
+        .finally(() => { chatBusy = false; });
+    }
+
+    function startOver() {
+        document.getElementById('chat-options').innerHTML = '';
+        appendMessage('Starting over. Describe your symptoms when you are ready.', 'bot');
+        showOptions(['Nearby doctors', 'Opening hours', 'Talk to Human']);
     }
 </script>
 

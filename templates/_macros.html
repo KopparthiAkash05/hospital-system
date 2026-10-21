@@ -1,0 +1,45 @@
+{#
+    Shared building blocks for the feedback & ratings feature.
+    Imported with: {% from "_macros.html" import stars_display, rating_distribution, star_input %}
+#}
+
+{% macro stars_display(rating, max_stars=5) -%}
+<span class="star-rating" role="img"
+      aria-label="Rated {{ rating }} out of {{ max_stars }} stars">
+    {%- for star in range(1, max_stars + 1) -%}
+    <i class="fas fa-star{% if star <= rating %} filled{% endif %}"></i>
+    {%- endfor -%}
+</span>
+{%- endmacro %}
+
+{% macro rating_distribution(distribution, total, labels) -%}
+<div class="rating-distribution">
+    {% for value in range(5, 0, -1) %}
+    {% set count = distribution.get(value, 0) %}
+    {% set pct = ((count / total) * 100) | round(1) if total else 0 %}
+    <div class="rating-row">
+        <span class="rating-row-label">{{ value }} {{ labels.get(value, '') }}</span>
+        <div class="rating-bar">
+            <div class="rating-bar-fill" style="width: {{ pct }}%"></div>
+        </div>
+        <span class="rating-row-count">{{ count }}</span>
+    </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro star_input(selected=0, labels=None) -%}
+<div class="star-input" data-star-input>
+    {% for value in range(1, 6) %}
+    <button type="button"
+            class="star-option{% if selected and value <= selected %} selected{% endif %}"
+            data-value="{{ value }}"
+            title="{{ (labels or {}).get(value, value) ~ ' star' ~ ('s' if value != 1 else '') }}"
+            aria-label="{{ (labels or {}).get(value, value) }}"
+            aria-pressed="{{ 'true' if selected and value <= selected else 'false' }}">
+        <i class="fas fa-star"></i>
+    </button>
+    {% endfor %}
+    <input type="hidden" name="rating" value="{{ selected if selected else '' }}">
+</div>
+{%- endmacro %}

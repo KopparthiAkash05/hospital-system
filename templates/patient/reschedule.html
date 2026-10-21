@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Reschedule Appointment - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-calendar-alt"></i>
+            <h2>Reschedule Appointment</h2>
+            <p>Currently {{ appointment.date }} at {{ appointment.time_formatted }} with Dr. {{ appointment.doctor_name }}</p>
+        </div>
+
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Your appointment returns to <strong>Pending</strong> and the doctor confirms the new time again.
+        </div>
+
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="date"><i class="fas fa-calendar"></i> New Date</label>
+                <input type="date" name="date" id="date" required min="{{ today }}">
+            </div>
+
+            <div class="form-group">
+                <label for="time"><i class="fas fa-clock"></i> New Time</label>
+                <select name="time" id="time" required>
+                    <option value="">-- Select Available Time --</option>
+                    {% for slot in available_slots %}
+                        <option value="{{ slot['24h'] }}">{{ slot['12h'] }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted" id="slotHint">* Only slots the doctor is available for are listed.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-check"></i> Confirm Reschedule
+            </button>
+
+            <a href="{{ url_for('patient_dashboard') }}" class="btn btn-ghost btn-block">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/slot-refresh.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var dateInput = document.getElementById('date');
+        var doctorId = {{ appointment.doctor_id }};
+        var appointmentId = {{ appointment.appointment_id }};
+
+        // The current appointment keeps its own slot out of the taken list.
+        dateInput.addEventListener('change', function() {
+            if (!this.value) return;
+            refreshTimeSlots('time', 'date', doctorId, appointmentId);
+        });
+    });
+</script>
+{% endblock %}

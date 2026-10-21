@@ -1,19 +1,55 @@
 // Mobile Navigation Toggle
+// Drives both the guest dropdown menu and the portal sidebar drawer:
+// the same #navToggle / #navMenu hooks, plus a body.nav-open state that the
+// drawer/backdrop CSS keys off.
 const navToggle = document.getElementById('navToggle');
 const navMenu = document.getElementById('navMenu');
+const navBackdrop = document.getElementById('navBackdrop');
+
+function setNavOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    if (navMenu) navMenu.classList.toggle('active', open);
+    if (navToggle) navToggle.setAttribute('aria-expanded', String(open));
+}
 
 if (navToggle) {
+    navToggle.setAttribute('aria-expanded', 'false');
     navToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
+        setNavOpen(!document.body.classList.contains('nav-open'));
     });
 }
 
-// Close mobile menu when clicking on a link
+// Close the menu / drawer when choosing a destination.
 document.querySelectorAll('.nav-menu a').forEach(link => {
     link.addEventListener('click', () => {
-        navMenu.classList.remove('active');
+        setNavOpen(false);
     });
 });
+
+// Close the drawer via its dimming backdrop or the Escape key.
+if (navBackdrop) {
+    navBackdrop.addEventListener('click', () => setNavOpen(false));
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) {
+        setNavOpen(false);
+        if (navToggle) navToggle.focus();
+    }
+});
+
+// Reset the drawer state when returning to the desktop layout.
+if (typeof window.matchMedia === 'function') {
+    const desktopQuery = window.matchMedia('(min-width: 769px)');
+    const resetOnDesktop = (event) => {
+        if (event.matches) setNavOpen(false);
+    };
+    if (typeof desktopQuery.addEventListener === 'function') {
+        desktopQuery.addEventListener('change', resetOnDesktop);
+    } else if (typeof desktopQuery.addListener === 'function') {
+        desktopQuery.addListener(resetOnDesktop);
+    }
+}
 
 // Auto-hide alerts after 5 seconds
 document.addEventListener('DOMContentLoaded', () => {
@@ -113,3 +149,43 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev
     if (stored === 'dark' || stored === 'light') return;
     applyTheme(event.matches ? 'dark' : 'light');
 });
+
+// Show a 12-hour (AM/PM) preview beside native time inputs without changing
+// their machine-readable 24-hour value.
+(function () {
+    function to12hr(value) {
+        if (!value) return '';
+        var parts = String(value).split(':');
+        var hours = parseInt(parts[0], 10);
+        var minutes = parseInt(parts[1], 10) || 0;
+        if (isNaN(hours)) return '';
+        var suffix = hours < 12 ? 'AM' : 'PM';
+        var hour12 = hours % 12 || 12;
+        return (hour12 < 10 ? '0' : '') + hour12 + ':' +
+            (minutes < 10 ? '0' : '') + minutes + ' ' + suffix;
+    }
+
+    function attach(input) {
+        if (input.dataset.time12Bound) return;
+        input.dataset.time12Bound = '1';
+        var hint = document.createElement('small');
+        hint.className = 'time-12hr-hint';
+        var update = function () {
+            hint.textContent = to12hr(input.value);
+        };
+        input.addEventListener('input', update);
+        input.addEventListener('change', update);
+        input.parentNode.insertBefore(hint, input.nextSibling);
+        update();
+    }
+
+    function init() {
+        document.querySelectorAll('input[type="time"]').forEach(attach);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

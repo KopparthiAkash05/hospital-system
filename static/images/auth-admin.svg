@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Administrator illustration">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#0f172a"/>
+            <stop offset="0.5" stop-color="#1e293b"/>
+            <stop offset="1" stop-color="#0f766e"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="0.2" cy="0.12" r="0.85">
+            <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.45"/>
+            <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="emblem" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
+            <stop offset="1" stop-color="#ccfbf1" stop-opacity="0.9"/>
+        </linearGradient>
+    </defs>
+
+    <rect width="900" height="1200" fill="url(#bg)"/>
+    <rect width="900" height="1200" fill="url(#glow)"/>
+
+    <circle cx="760" cy="180" r="250" fill="#ffffff" opacity="0.05"/>
+    <circle cx="120" cy="900" r="290" fill="#ffffff" opacity="0.05"/>
+    <circle cx="700" cy="1040" r="150" fill="#ffffff" opacity="0.06"/>
+
+    <g stroke="#5eead4" stroke-width="3" opacity="0.3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 320 h120 l28 -64 l40 128 l34 -104 l26 40 h140"/>
+        <path d="M520 1000 h100 l22 -50 l32 100 l28 -80 l20 30 h110"/>
+    </g>
+
+    <g opacity="0.5" fill="none" stroke="#5eead4" stroke-width="3">
+        <rect x="120" y="330" width="90" height="70" rx="12"/>
+        <path d="M120 355 h90 M150 330 v70"/>
+    </g>
+
+    <g transform="translate(450 560)">
+        <circle r="215" fill="#ffffff" opacity="0.08"/>
+        <circle r="152" fill="url(#emblem)"/>
+        <path d="M0 -92 L74 -62 V10 C74 62 41 96 0 116 C -41 96 -74 62 -74 10 V -62 Z" fill="#0f766e"/>
+        <path d="M-34 -6 l24 26 l46 -52" fill="none" stroke="#ccfbf1" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g fill="#ffffff" opacity="0.14">
+        <rect x="620" y="700" width="14" height="14" rx="3"/>
+        <rect x="664" y="748" width="10" height="10" rx="2"/>
+        <rect x="582" y="782" width="12" height="12" rx="3"/>
+        <rect x="256" y="632" width="11" height="11" rx="2"/>
+        <rect x="212" y="690" width="14" height="14" rx="3"/>
+    </g>
+</svg>

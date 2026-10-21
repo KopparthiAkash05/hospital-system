@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Profile - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user"></i> {{ patient.name }}</h1>
+        <p>
+            Patient #{{ patient.patient_id }}
+            &middot;
+            <span class="badge badge-{{ 'approved' if patient.is_active else 'cancelled' }}">
+                {{ 'Active' if patient.is_active else 'Inactive' }}
+            </span>
+        </p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-section">
+            <h2><i class="fas fa-id-card"></i> Profile</h2>
+            <div class="doctor-summary">
+                <p><strong>Full name:</strong> {{ patient.name }}</p>
+                <p><strong>Email:</strong> {{ patient.email }}</p>
+                <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                <p><strong>Date of birth:</strong> {{ patient.date_of_birth or 'N/A' }}</p>
+                <p><strong>Age:</strong> {{ patient.age or 'N/A' }}</p>
+                <p><strong>Gender:</strong> {{ patient.gender or 'N/A' }}</p>
+                <p><strong>Address:</strong> {{ patient.address or 'N/A' }}</p>
+                <p><strong>Emergency contact:</strong> {{ patient.emergency_contact_name or 'N/A' }}</p>
+                <p><strong>Emergency phone:</strong> {{ patient.emergency_contact_phone or 'N/A' }}</p>
+            </div>
+
+            <div class="appointment-actions mt-4">
+                <form action="{{ url_for('admin_toggle_patient', patient_id=patient.patient_id) }}" method="POST">
+                    <button type="submit" class="btn btn-{{ 'warning' if patient.is_active else 'success' }}"
+                            onclick="return confirm('{{ 'Deactivate' if patient.is_active else 'Activate' }} this patient?')">
+                        <i class="fas fa-{{ 'ban' if patient.is_active else 'check' }}"></i>
+                        {{ 'Deactivate Patient' if patient.is_active else 'Activate Patient' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2><i class="fas fa-calendar-alt"></i> Appointment History</h2>
+            {% if appointments %}
+            <div class="appointments-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Doctor</th>
+                            <th>Specialization</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt.appointment_id }}</td>
+                            <td><strong>{{ appt.date }}</strong></td>
+                            <td>{{ appt.time_formatted }}</td>
+                            <td>Dr. {{ appt.doctor_name }}</td>
+                            <td>{{ appt.specialization or 'N/A' }}</td>
+                            <td>{{ appt.reason or 'N/A' }}</td>
+                            <td><span class="badge badge-{{ appt.status.lower() }}">{{ appt.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>This patient has no appointments yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="filter-section">
+        <a href="{{ url_for('admin_patients') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Back to Patients
+        </a>
+    </div>
+</div>
+{% endblock %}

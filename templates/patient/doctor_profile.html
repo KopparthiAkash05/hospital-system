@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Profile - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user-md"></i> Dr. {{ doctor.name }}</h1>
+        <p>{{ doctor.specialization }}{% if doctor.department_name %} &middot; {{ doctor.department_name }}{% endif %}</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Profile details -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-id-card"></i> Profile</h2>
+            <div class="doctor-summary">
+                <p><strong>Specialization:</strong> {{ doctor.specialization }}</p>
+                {% if doctor.department_name %}
+                <p><strong>Department:</strong> {{ doctor.department_name }}</p>
+                {% endif %}
+                {% if doctor.qualification %}
+                <p><strong>Qualification:</strong> {{ doctor.qualification }}</p>
+                {% endif %}
+                <p><strong>Experience:</strong> {{ doctor.experience }} years</p>
+                {% if doctor.license_number %}
+                <p><strong>License Number:</strong> {{ doctor.license_number }}</p>
+                {% endif %}
+                {% if doctor.consultation_fee %}
+                <p><strong>Consultation Fee:</strong> &#8377;{{ doctor.consultation_fee }}</p>
+                {% endif %}
+                <p><strong>Email:</strong> {{ doctor.email }}</p>
+                <p><strong>Phone:</strong> {{ doctor.phone }}</p>
+                {% if doctor.address %}
+                <p><strong>Clinic Address:</strong> {{ doctor.address }}</p>
+                {% endif %}
+                <p>
+                    <strong>Availability Status:</strong>
+                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
+                        {{ doctor.availability_status }}
+                    </span>
+                </p>
+            </div>
+
+            {% if doctor.profile_description %}
+            <h2 class="mt-6"><i class="fas fa-align-left"></i> About</h2>
+            <p class="text-muted">{{ doctor.profile_description }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Availability -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-calendar-alt"></i> Availability</h2>
+
+            {% if schedule_summary %}
+            <p class="results-count"><strong>Working days:</strong> {{ schedule_summary }}</p>
+            {% elif doctor.available_slots %}
+            <p class="results-count"><strong>Working hours:</strong> {{ doctor.available_slots }}</p>
+            {% else %}
+            <p class="text-muted">No availability has been published yet.</p>
+            {% endif %}
+
+            {% if availability %}
+            <p class="results-count">Next {{ availability|length }} available day(s)</p>
+            <div class="appointments-table appointments-table--compact">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Open Slots</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in availability %}
+                        <tr>
+                            <td><strong>{{ day.date_label }}</strong></td>
+                            <td>
+                                {% for slot in day.slots %}
+                                <span class="badge badge-approved">{{ slot['12h'] }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>No open slots in the next two weeks</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        {% if doctor.is_active != 0 and doctor.availability_status == 'Available' %}
+        <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="action-card">
+            <i class="fas fa-calendar-plus"></i>
+            <h3>Book Appointment</h3>
+            <p>Pick a date and time with Dr. {{ doctor.name }}</p>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('view_doctors', specialization=doctor.specialization) }}" class="action-card">
+            <i class="fas fa-search"></i>
+            <h3>Similar Doctors</h3>
+            <p>More {{ doctor.specialization }} specialists</p>
+        </a>
+        <a href="{{ url_for('patient_departments') }}" class="action-card">
+            <i class="fas fa-building"></i>
+            <h3>Browse Departments</h3>
+            <p>See all departments and their doctors</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

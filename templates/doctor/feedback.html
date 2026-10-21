@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars_display, rating_distribution %}
+
+{% block title %}Patient Feedback - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-star"></i> Patient Feedback</h1>
+        <p>Ratings and reviews your patients have shared after completed appointments</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid mb-8">
+        <div class="stat-card primary">
+            <i class="fas fa-comment-dots"></i>
+            <h3>{{ stats.total }}</h3>
+            <p>Total Reviews</p>
+        </div>
+        <div class="stat-card success">
+            <i class="fas fa-star"></i>
+            <h3>{{ '%.1f'|format(stats.average) if stats.total else '0.0' }}</h3>
+            <p>Average Rating (out of 5)</p>
+        </div>
+        <div class="stat-card warning">
+            <i class="fas fa-star"></i>
+            <h3>{{ distribution.get(5, 0) }}</h3>
+            <p>5-Star Reviews</p>
+        </div>
+        <div class="stat-card danger">
+            <i class="fas fa-star"></i>
+            <h3>{{ distribution.get(1, 0) }}</h3>
+            <p>1-Star Reviews</p>
+        </div>
+    </div>
+
+    <!-- Rating distribution -->
+    {% if stats.total %}
+    <div class="dashboard-section">
+        <h2><i class="fas fa-chart-bar"></i> Rating Distribution</h2>
+        <div class="panel">
+            {{ rating_distribution(distribution, stats.total, rating_labels) }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('doctor_feedback') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="rating"><i class="fas fa-filter"></i> Rating</label>
+                    <select name="rating" id="rating">
+                        <option value="">All Ratings</option>
+                        {% for value, label in rating_labels.items()|sort(reverse=true) %}
+                        <option value="{{ value }}" {% if selected_rating == value %}selected{% endif %}>
+                            {{ value }} &mdash; {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sort"><i class="fas fa-sort"></i> Sort</label>
+                    <select name="sort" id="sort">
+                        <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest first</option>
+                        <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Apply
+                    </button>
+                    <a href="{{ url_for('doctor_feedback') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if feedback_list %}
+    <p class="results-count">Found {{ feedback_list|length }} review(s)</p>
+
+    <div class="feedback-list">
+        {% for feedback in feedback_list %}
+        <div class="feedback-card">
+            <div class="feedback-card-head">
+                <div>
+                    <strong>{{ feedback.patient_name or 'Anonymous patient' }}</strong>
+                    <br>
+                    <small>
+                        Appointment #{{ feedback.appointment_id }} &middot;
+                        {{ feedback.appointment_date }}
+                        {{ feedback.appointment_time_formatted }}
+                    </small>
+                </div>
+                <div class="feedback-card-rating">
+                    {{ stars_display(feedback.rating) }}
+                    <span class="badge badge-approved">{{ rating_labels.get(feedback.rating, '') }}</span>
+                </div>
+            </div>
+
+            {% if feedback.comment %}
+            <p class="feedback-comment">{{ feedback.comment }}</p>
+            {% else %}
+            <p class="feedback-comment feedback-comment--empty">No written comment</p>
+            {% endif %}
+
+            <div class="feedback-card-foot">
+                <small>
+                    <i class="fas fa-clock"></i>
+                    Submitted {{ feedback.created_at.strftime('%d-%m-%Y') }}
+                    {% if feedback.updated_at and feedback.updated_at != feedback.created_at %}
+                    &middot; edited {{ feedback.updated_at.strftime('%d-%m-%Y') }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-star"></i>
+        <p>No feedback{% if selected_rating %} matching the selected rating{% endif %} yet</p>
+        <a href="{{ url_for('doctor_feedback') }}" class="btn btn-primary">
+            <i class="fas fa-redo"></i> Show All Reviews
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

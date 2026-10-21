@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Schedules{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-alt"></i> Manage Schedules</h1>
+        <p>Every doctor's working days and hours</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-section">
+            <h2><i class="fas fa-clock"></i> All Availability</h2>
+
+            {% if schedules %}
+            <div class="appointments-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Doctor</th>
+                            <th>Day</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Slot Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td>
+                                <strong>Dr. {{ schedule.doctor_name }}</strong>
+                                {% if not schedule.doctor_active %}
+                                <br><span class="badge badge-cancelled">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ day_names.get(schedule.day_of_week, schedule.day_of_week) }}</td>
+                            <td>{{ schedule.start_time|time12 }}</td>
+                            <td>{{ schedule.end_time|time12 }}</td>
+                            <td>{{ schedule.slot_duration }} min</td>
+                            <td>
+                                <div class="appointment-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm edit-schedule-btn"
+                                            data-id="{{ schedule.schedule_id }}"
+                                            data-start="{{ schedule.start_time|hm24 }}"
+                                            data-end="{{ schedule.end_time|hm24 }}"
+                                            data-duration="{{ schedule.slot_duration }}">
+                                        <i class="fas fa-pen"></i> Update
+                                    </button>
+                                    <form action="{{ url_for('admin_delete_schedule', schedule_id=schedule.schedule_id) }}" method="POST">
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Remove this availability window?')">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>No availability windows defined yet</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-section">
+            <h2><i class="fas fa-plus-circle"></i> Add Availability</h2>
+            <form method="POST" action="{{ url_for('admin_add_schedule') }}" class="settings-form">
+                <div class="form-group">
+                    <label for="doctor_id"><i class="fas fa-user-md"></i> Doctor</label>
+                    <select name="doctor_id" id="doctor_id" required>
+                        <option value="">-- Select a doctor --</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc.doctor_id }}">{{ doc.name }} ({{ doc.specialization }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="day_of_week"><i class="fas fa-calendar-day"></i> Working Day</label>
+                    <select name="day_of_week" id="day_of_week" required>
+                        {% for number, name in day_names.items() %}
+                        <option value="{{ number }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_time"><i class="fas fa-play"></i> Start Time</label>
+                        <input type="time" name="start_time" id="start_time" required value="09:00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end_time"><i class="fas fa-stop"></i> End Time</label>
+                        <input type="time" name="end_time" id="end_time" required value="17:00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="slot_duration"><i class="fas fa-hourglass-half"></i> Slot Duration (minutes)</label>
+                    <input type="number" name="slot_duration" id="slot_duration" min="5" max="240" value="30" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Availability
+                </button>
+            </form>
+        </div>
+
+        <div class="dashboard-section" id="updatePanel" style="display:none;">
+            <h2><i class="fas fa-edit"></i> Update Availability</h2>
+            <form method="POST" id="updateForm" class="settings-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="update_start"><i class="fas fa-play"></i> Start Time</label>
+                        <input type="time" name="start_time" id="update_start" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="update_end"><i class="fas fa-stop"></i> End Time</label>
+                        <input type="time" name="end_time" id="update_end" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="update_duration"><i class="fas fa-hourglass-half"></i> Slot Duration (minutes)</label>
+                    <input type="number" name="slot_duration" id="update_duration" min="5" max="240" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Window
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('updatePanel').style.display='none';">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.edit-schedule-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var id = this.getAttribute('data-id');
+            document.getElementById('update_start').value = String(this.getAttribute('data-start')).slice(0, 5);
+            document.getElementById('update_end').value = String(this.getAttribute('data-end')).slice(0, 5);
+            document.getElementById('update_duration').value = this.getAttribute('data-duration');
+            document.getElementById('updateForm').action = '/admin/schedules/' + id + '/update';
+            document.getElementById('updatePanel').style.display = 'block';
+            document.getElementById('updatePanel').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+</script>
+{% endblock %}

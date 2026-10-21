@@ -42,7 +42,19 @@
     <!-- Doctors List -->
     <div class="doctors-list">
         <h2><i class="fas fa-user-md"></i> Doctors Near You</h2>
-        
+        {% if has_patient_location and located_count %}
+        <p class="text-muted">
+            Distances are approximate straight-line distances based on the location you saved.
+            Travel time and road distance are not estimated here &mdash; use the directions link
+            for real driving information.
+        </p>
+        {% elif not has_patient_location %}
+        <p class="text-muted">
+            Add your location above to sort by distance. Available doctors are still listed below
+            with map links where a location is known.
+        </p>
+        {% endif %}
+
         {% if doctors %}
         <div class="doctors-grid">
             {% for doctor in doctors %}
@@ -53,18 +65,38 @@
                 <div class="doctor-info">
                     <h3>Dr. {{ doctor.name }}</h3>
                     <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                    {% if doctor.qualification %}
+                    <p><i class="fas fa-graduation-cap"></i> {{ doctor.qualification }}</p>
+                    {% endif %}
                     <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
                     {% if doctor.city %}
                     <p><i class="fas fa-city"></i> {{ doctor.city }}</p>
                     {% endif %}
-                    {% if doctor.distance %}
-                    <p class="distance"><i class="fas fa-route"></i> {{ doctor.distance }} km away</p>
+                    {% if doctor.availability_status %}
+                    <p class="availability availability--{{ 'available' if doctor.availability_status == 'Available' else 'unavailable' }}">
+                        <i class="fas fa-circle"></i> {{ doctor.availability_status }}
+                    </p>
+                    {% endif %}
+                    {% if doctor.distance_km is defined and doctor.distance_km is not none %}
+                    <p class="distance">
+                        <i class="fas fa-route"></i> ~{{ doctor.distance_km }} km away
+                        <span class="text-muted">(approximate straight-line distance)</span>
+                    </p>
                     {% endif %}
                 </div>
                 <div class="doctor-actions">
                     <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
                         <i class="fas fa-calendar-plus"></i> Book Appointment
                     </a>
+                    {% if doctor.directions_url %}
+                    <a href="{{ doctor.directions_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block">
+                        <i class="fas fa-diamond-turn-right"></i> Get Directions
+                    </a>
+                    {% elif doctor.map_url %}
+                    <a href="{{ doctor.map_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block">
+                        <i class="fas fa-map-location-dot"></i> View on Map
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -72,8 +104,8 @@
         {% else %}
         <div class="empty-state">
             <i class="fas fa-search"></i>
-            <p>No doctors with location data found</p>
-            <p class="text-muted">Ask doctors to update their location in their profile</p>
+            <p>No doctors are available right now</p>
+            <p class="text-muted">Please check back later or contact the hospital reception</p>
         </div>
         {% endif %}
     </div>

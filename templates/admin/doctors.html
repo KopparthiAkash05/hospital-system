@@ -6,8 +6,50 @@
 <div class="container">
     <div class="page-header">
         <h1><i class="fas fa-user-md"></i> Manage Doctors</h1>
+        <p>{{ active_count }} active &middot; {{ inactive_count }} inactive</p>
     </div>
-    
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_doctors') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Name, email, specialization or license"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="department"><i class="fas fa-filter"></i> Department</label>
+                    <select name="department" id="department">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.department_id }}" {% if selected_department == dept.department_id|string %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_doctors') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="filter-section">
+        <a href="{{ url_for('admin_add_doctor') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add Doctor
+        </a>
+    </div>
+
     <div class="dashboard-section">
         <div class="appointments-table">
             <table>
@@ -15,21 +57,59 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Department</th>
                         <th>Specialization</th>
                         <th>Experience</th>
+                        <th>Fee</th>
                         <th>Email</th>
                         <th>Phone</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for doctor in doctors %}
                     <tr>
                         <td>{{ doctor.doctor_id }}</td>
-                        <td>Dr. {{ doctor.name }}</td>
+                        <td><strong>Dr. {{ doctor.name }}</strong></td>
+                        <td>{{ doctor.department_name or 'Unassigned' }}</td>
                         <td>{{ doctor.specialization }}</td>
                         <td>{{ doctor.experience }} years</td>
+                        <td>{% if doctor.consultation_fee %}&#8377;{{ doctor.consultation_fee }}{% else %}N/A{% endif %}</td>
                         <td>{{ doctor.email }}</td>
                         <td>{{ doctor.phone }}</td>
+                        <td>
+                            {% if doctor.is_active %}
+                            <span class="badge badge-approved">Active</span>
+                            {% else %}
+                            <span class="badge badge-cancelled">Inactive</span>
+                            {% endif %}
+                            <br>
+                            <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
+                                {{ doctor.availability_status or 'Available' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="appointment-actions">
+                                <a href="{{ url_for('admin_edit_doctor', doctor_id=doctor.doctor_id) }}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-pen"></i> Edit
+                                </a>
+                                <a href="{{ url_for('admin_doctor_schedules', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-calendar-alt"></i> Schedule
+                                </a>
+                                <form action="{{ url_for('admin_toggle_doctor', doctor_id=doctor.doctor_id) }}" method="POST">
+                                    <button type="submit" class="btn btn-{{ 'warning' if doctor.is_active else 'success' }} btn-sm"
+                                            onclick="return confirm('{{ 'Deactivate' if doctor.is_active else 'Activate' }} this doctor?')">
+                                        <i class="fas fa-{{ 'ban' if doctor.is_active else 'check' }}"></i>
+                                        {{ 'Deactivate' if doctor.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10">No doctors found</td>
                     </tr>
                     {% endfor %}
                 </tbody>

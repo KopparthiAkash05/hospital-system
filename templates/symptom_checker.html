@@ -23,7 +23,7 @@
                         placeholder="e.g., Fever, Cough, Headache..."
                         required
                     >{{ symptoms }}</textarea>
-                    <small class="form-text">Separate multiple symptoms with commas</small>
+                    <small class="form-text">Describe it in your own words (e.g. "fever and cough for 3 days") or separate symptoms with commas</small>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-lg btn-block">
@@ -38,19 +38,55 @@
                     <h3>AI Suggestion</h3>
                 </div>
                 <div class="result-content">
+                    {% if analysis and analysis.urgent %}
+                    <div class="alert alert-danger" role="alert">
+                        <strong><i class="fas fa-triangle-exclamation"></i> This may be urgent.</strong>
+                        {% if analysis.self_harm %}
+                        If you are thinking about harming yourself, please contact your local emergency number (112 in India) or reach out to someone you trust right now.
+                        {% else %}
+                        If your symptoms are severe, sudden or getting worse, go to the nearest Emergency department or call your local emergency number (112 in India) instead of booking an appointment.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
                     <p>Based on your symptoms: <strong>"{{ symptoms }}"</strong></p>
                     <div class="suggested-department">
                         <i class="fas fa-hospital"></i>
                         <h2>{{ suggested_department }}</h2>
                     </div>
+
+                    {% if analysis and analysis.recognised %}
+                    <p class="text-muted">
+                        We recognised: {{ analysis.matched | join(', ') }}
+                    </p>
                     <p class="recommendation">
-                        We recommend booking an appointment with a specialist in 
+                        We recommend booking an appointment with a specialist in
                         <strong>{{ suggested_department }}</strong>
                     </p>
-                    <a href="{{ url_for('view_doctors') }}?specialization={{ suggested_department }}" 
+                    {% else %}
+                    <p class="recommendation">
+                        We couldn't match specific symptoms, so <strong>{{ suggested_department }}</strong>
+                        is a good first stop. Try adding where it hurts, what it feels like and how long it has lasted for a more precise suggestion.
+                    </p>
+                    {% endif %}
+
+                    <a href="{{ url_for('view_doctors') }}?specialization={{ suggested_department | urlencode }}"
                        class="btn btn-success btn-block">
                         <i class="fas fa-calendar-plus"></i> Book Appointment
                     </a>
+
+                    {% if analysis and analysis.alternatives %}
+                    <p class="text-muted mt-4">Other departments that may also help:</p>
+                    <div class="symptom-tags">
+                        {% for alt in analysis.alternatives %}
+                        <a class="symptom-tag" href="{{ url_for('view_doctors') }}?specialization={{ alt | urlencode }}">{{ alt }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <p class="text-subtle mt-4">
+                        This tool suggests a department only. It is not a medical diagnosis. Please consult a doctor.
+                    </p>
                 </div>
             </div>
             {% endif %}

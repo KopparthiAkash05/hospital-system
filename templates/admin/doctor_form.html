@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if doctor else 'Add' }} Doctor - MediCare Hospital{% endblock %}
+
+{% block content %}
+{% macro value(src, field, fallback='') -%}
+    {%- if src and field in src and src[field] is not none -%}
+        {{ src[field] }}
+    {%- elif src and field in src -%}
+        {{ fallback }}
+    {%- else -%}
+        {{ fallback }}
+    {%- endif -%}
+{%- endmacro %}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-user-md"></i>
+            <h2>{{ 'Edit Doctor' if doctor else 'Add New Doctor' }}</h2>
+            <p>{{ value(doctor, 'name') if doctor else 'Create a doctor login account' }}</p>
+        </div>
+
+        {% set src = form_data if form_data else doctor %}
+
+        <form method="POST" class="auth-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" name="name" id="name" value="{{ value(src, 'name') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="specialization"><i class="fas fa-stethoscope"></i> Specialization</label>
+                    <input type="text" name="specialization" id="specialization" value="{{ value(src, 'specialization') }}" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" name="email" id="email" value="{{ value(src, 'email') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone</label>
+                    <input type="text" name="phone" id="phone" value="{{ value(src, 'phone') }}" required>
+                </div>
+            </div>
+
+            {% if not doctor %}
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Temporary Password</label>
+                <input type="text" name="password" id="password" value="{{ value(src, 'password') }}" required minlength="6">
+                <small class="form-hint">The doctor can change this from Doctor Settings after logging in.</small>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="department_id"><i class="fas fa-building"></i> Department</label>
+                {% set selected_department = value(src, 'department_id') %}
+                <select name="department_id" id="department_id">
+                    <option value="">-- Unassigned --</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.department_id }}"
+                            {% if selected_department and selected_department|string == dept.department_id|string %}selected{% endif %}>
+                        {{ dept.name }}{{ '' if dept.is_active else ' (inactive)' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="qualification"><i class="fas fa-graduation-cap"></i> Qualification</label>
+                    <input type="text" name="qualification" id="qualification" value="{{ value(src, 'qualification') }}" placeholder="e.g., MBBS, MD">
+                </div>
+
+                <div class="form-group">
+                    <label for="license_number"><i class="fas fa-id-badge"></i> License Number</label>
+                    <input type="text" name="license_number" id="license_number" value="{{ value(src, 'license_number') }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="experience"><i class="fas fa-briefcase"></i> Experience (years)</label>
+                    <input type="number" name="experience" id="experience" value="{{ value(src, 'experience') }}" min="0" max="60">
+                </div>
+
+                <div class="form-group">
+                    <label for="consultation_fee"><i class="fas fa-rupee-sign"></i> Consultation Fee</label>
+                    <input type="number" name="consultation_fee" id="consultation_fee" value="{{ value(src, 'consultation_fee') }}" min="0">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="availability_status"><i class="fas fa-circle"></i> Availability</label>
+                    {% set current_status = value(src, 'availability_status', 'Available') or 'Available' %}
+                    <select name="availability_status" id="availability_status">
+                        <option value="Available" {% if current_status != 'Unavailable' %}selected{% endif %}>Available</option>
+                        <option value="Unavailable" {% if current_status == 'Unavailable' %}selected{% endif %}>Unavailable</option>
+                    </select>
+                </div>
+
+                {% if doctor %}
+                <div class="form-group">
+                    <label><i class="fas fa-power-off"></i> Account</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" value="1" {% if value(src, 'is_active') %}checked{% endif %}>
+                        Active (can receive appointments)
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="profile_description"><i class="fas fa-align-left"></i> Profile Description</label>
+                <textarea name="profile_description" id="profile_description" rows="3">{{ value(src, 'profile_description') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="address"><i class="fas fa-map-marker-alt"></i> Clinic Address</label>
+                <input type="text" name="address" id="address" value="{{ value(src, 'address') }}" placeholder="Full clinic address for Nearby Doctors">
+            </div>
+
+            {% if doctor %}
+            <div class="form-group">
+                <label for="available_slots"><i class="fas fa-clock"></i> Availability Summary</label>
+                <input type="text" name="available_slots" id="available_slots" value="{{ value(src, 'available_slots') }}" placeholder="e.g., Mon-Fri: 10AM-5PM">
+            </div>
+            {% endif %}
+
+            <div class="auth-form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {{ 'Update Doctor' if doctor else 'Add Doctor' }}
+                </button>
+                <a href="{{ url_for('admin_doctors') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -16,15 +16,98 @@
                 <a href="{{ url_for('view_doctors') }}" class="action-card">
                     <i class="fas fa-search"></i>
                     <h3>Find a Doctor</h3>
-                    <p>Search by specialization</p>
+                    <p>Search by name, specialization or department</p>
                 </a>
+               <!--  <a href="{{ url_for('patient_departments') }}" class="action-card">
+                    <i class="fas fa-building"></i>
+                    <h3>Departments</h3>
+                    <p>Browse departments and their doctors</p>
+                </a> -->
+                <!-- <a href="{{ url_for('patient_book_appointment_page') }}" class="action-card">
+                    <i class="fas fa-calendar-plus"></i>
+                    <h3>Book Appointment</h3>
+                    <p>Choose a doctor, date and time</p>
+                </a> -->
                 <a href="{{ url_for('patient_dashboard') }}#history" class="action-card">
                     <i class="fas fa-history"></i>
                     <h3>View History</h3>
                     <p>Check past appointments</p>
                 </a>
+                <a href="{{ url_for('patient_prescriptions') }}" class="action-card">
+                    <i class="fas fa-file-prescription"></i>
+                    <h3>My Prescriptions</h3>
+                    <p>View medicines and download PDFs</p>
+                </a>
+                <a href="{{ url_for('patient_feedback') }}" class="action-card">
+                    <i class="fas fa-star"></i>
+                    <h3>Feedback &amp; Ratings</h3>
+                    <p>Rate completed visits with your doctor</p>
+                </a>
+            </div>
+
+            <!-- Today's Appointments -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-calendar-day"></i> Today's Appointments</h2>
+                {% if today_appointments %}
+                <div class="appointments-list">
+                    {% for appointment in today_appointments %}
+                    <div class="appointment-card status-{{ appointment.status.lower() }}">
+                        <div class="appointment-info">
+                            <h3>Dr. {{ appointment.doctor_name }}</h3>
+                            <p><i class="fas fa-stethoscope"></i> {{ appointment.specialization }}</p>
+                            <p><i class="fas fa-clock"></i> {{ appointment.time_formatted }}</p>
+                            <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+                        </div>
+                        <div class="appointment-actions">
+                            <a href="{{ url_for('patient_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> Details
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-day"></i>
+                    <p>No appointments scheduled for today</p>
+                </div>
+                {% endif %}
             </div>
             
+            <!-- My Queue Status -->
+            <div class="dashboard-section" id="my-queue" {% if not my_queue_entries %}hidden{% endif %}>
+                <h2><i class="fas fa-stream"></i> My Queue Status</h2>
+                <div class="queue-status-list" id="queue-status-list">
+                    {% for entry in my_queue_entries %}
+                    <div class="queue-status-card queue-status-{{ entry.status|lower|replace(' ', '-') }}">
+                        <div class="queue-status-main">
+                            <span class="queue-number-big">{{ entry.label }}</span>
+                            <div class="queue-status-info">
+                                <h3>Dr. {{ entry.doctor_name }}</h3>
+                                <p>
+                                    <i class="fas fa-calendar"></i> {{ entry.queue_date_str }}
+                                    {% if entry.appointment_time_12hr %}
+                                    &middot; <i class="fas fa-clock"></i> {{ entry.appointment_time_12hr }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="queue-status-side">
+                            <span class="badge badge-{{ entry.status|lower|replace(' ', '-') }}">{{ entry.status }}</span>
+                            {% if entry.status == 'Waiting' %}
+                            <span class="queue-ahead">
+                                {% if entry.ahead_count == 0 %}You are next!{% else %}{{ entry.ahead_count }} ahead of you{% endif %}
+                            </span>
+                            {% elif entry.status == 'In Progress' %}
+                            <span class="queue-ahead"><i class="fas fa-stethoscope"></i> You are being seen now</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
             <!-- Upcoming Appointments -->
             <div class="dashboard-section">
                 <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
@@ -37,12 +120,23 @@
                             <p><i class="fas fa-stethoscope"></i> {{ appointment.specialization }}</p>
                             <p><i class="fas fa-calendar"></i> {{ appointment.date }}</p>
                             <p><i class="fas fa-clock"></i> {{ appointment.time_formatted }}</p>
+                            {% if appointment.reason %}
+                            <p><i class="fas fa-note-sticky"></i> {{ appointment.reason }}</p>
+                            {% endif %}
                             <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
                         </div>
                         
                         <!-- Cancel button for both Pending and Approved appointments -->
                         {% if appointment.status in ['Pending', 'Approved'] %}
                         <div class="appointment-actions">
+                            <a href="{{ url_for('patient_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> Details
+                            </a>
+                            <a href="{{ url_for('reschedule_appointment', appointment_id=appointment.appointment_id) }}"
+                               class="btn btn-secondary btn-sm">
+                                <i class="fas fa-calendar-alt"></i> Reschedule
+                            </a>
                             <a href="{{ url_for('cancel_appointment', appointment_id=appointment.appointment_id) }}" 
                                class="btn btn-danger btn-sm" 
                                onclick="return confirm('Are you sure you want to cancel this appointment?')">
@@ -60,6 +154,94 @@
                     <a href="{{ url_for('view_doctors') }}" class="btn btn-primary">Book Now</a>
                 </div>
                 {% endif %}
+            </div>
+
+            <!-- Departments -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-building"></i> Departments</h2>
+                {% if departments %}
+                <div class="appointments-list">
+                    {% for department in departments %}
+                    <div class="appointment-card">
+                        <div class="appointment-info">
+                            <h3>{{ department.name }}</h3>
+                            <p><i class="fas fa-user-md"></i>
+                                {{ department.doctor_count }}
+                                {{ 'doctor' if department.doctor_count == 1 else 'doctors' }} available
+                            </p>
+                        </div>
+                        <div class="appointment-actions">
+                            <a href="{{ url_for('patient_department_detail', department_id=department.department_id) }}"
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-users"></i> View
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-building"></i>
+                    <p>No departments available</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Available Doctors -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-user-md"></i> Available Doctors</h2>
+                {% if available_doctors %}
+                <div class="doctors-grid">
+                    {% for doctor in available_doctors %}
+                    <div class="doctor-card">
+                        <div class="doctor-avatar">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div class="doctor-info">
+                            <h3>Dr. {{ doctor.name }}</h3>
+                            <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                            <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                            {% if doctor.department_name %}
+                            <p><i class="fas fa-building"></i> {{ doctor.department_name }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="doctor-actions">
+                            <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
+                                <i class="fas fa-calendar-plus"></i> Book
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-md"></i>
+                    <p>No doctors are available right now</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Notifications -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-bell"></i> Notifications</h2>
+                <div class="quick-actions">
+                    <a href="{{ url_for('patient_notifications') }}" class="action-card">
+                        <i class="fas fa-inbox"></i>
+                        <h3>
+                            {% if unread_notifications > 0 %}
+                            {{ unread_notifications }} Unread Notification{{ 's' if unread_notifications != 1 else '' }}
+                            {% else %}
+                            No Unread Notifications
+                            {% endif %}
+                        </h3>
+                        <p>Booking confirmations, cancellations and updates</p>
+                    </a>
+                    <a href="{{ url_for('patient_appointments') }}" class="action-card">
+                        <i class="fas fa-list-check"></i>
+                        <h3>All My Appointments</h3>
+                        <p>View, reschedule or cancel any visit</p>
+                    </a>
+                </div>
             </div>
             
             <!-- Appointment History -->
@@ -86,7 +268,165 @@
                 </div>
                 {% endif %}
             </div>
+
+            <!-- Recent Appointments -->
+            <div class="dashboard-section">
+                <h2><i class="fas fa-clock-rotate-left"></i> Recent Appointments</h2>
+                {% if recent_appointments %}
+                <div class="appointments-table appointments-table--compact">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in recent_appointments %}
+                            <tr>
+                                <td><strong>Dr. {{ appointment.doctor_name }}</strong></td>
+                                <td>{{ appointment.date }}</td>
+                                <td>{{ appointment.time_formatted }}</td>
+                                <td>
+                                    <span class="badge badge-{{ appointment.status.lower() }}">
+                                        {{ appointment.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('patient_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                                       class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No recent appointments</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var statusUrl = {{ url_for('patient_queue_status')|tojson }};
+    var list = document.getElementById('queue-status-list');
+    var section = document.getElementById('my-queue');
+    if (!list || !section) return;
+
+    var pollTimer = null;
+
+    function badgeClass(status) {
+        return 'badge badge-' + status.toLowerCase().replace(/\s+/g, '-');
+    }
+
+    function buildCard(entry) {
+        var card = document.createElement('div');
+        card.className = 'queue-status-card queue-status-' +
+            entry.status.toLowerCase().replace(/\s+/g, '-');
+
+        var main = document.createElement('div');
+        main.className = 'queue-status-main';
+        var number = document.createElement('span');
+        number.className = 'queue-number-big';
+        number.textContent = entry.label;
+        main.appendChild(number);
+
+        var info = document.createElement('div');
+        info.className = 'queue-status-info';
+        var title = document.createElement('h3');
+        title.textContent = 'Dr. ' + (entry.doctor_name || 'Doctor');
+        info.appendChild(title);
+        var meta = document.createElement('p');
+        var calendar = document.createElement('i');
+        calendar.className = 'fas fa-calendar';
+        meta.appendChild(calendar);
+        meta.appendChild(document.createTextNode(' ' + entry.queue_date_str));
+        if (entry.appointment_time_12hr) {
+            meta.appendChild(document.createTextNode(' · '));
+            var clock = document.createElement('i');
+            clock.className = 'fas fa-clock';
+            meta.appendChild(clock);
+            meta.appendChild(document.createTextNode(' ' + entry.appointment_time_12hr));
+        }
+        info.appendChild(meta);
+        main.appendChild(info);
+        card.appendChild(main);
+
+        var side = document.createElement('div');
+        side.className = 'queue-status-side';
+        var badge = document.createElement('span');
+        badge.className = badgeClass(entry.status);
+        badge.textContent = entry.status;
+        side.appendChild(badge);
+        var ahead = document.createElement('span');
+        ahead.className = 'queue-ahead';
+        if (entry.status === 'Waiting') {
+            ahead.textContent = entry.ahead_count === 0
+                ? 'You are next!'
+                : entry.ahead_count + ' ahead of you';
+            side.appendChild(ahead);
+        } else if (entry.status === 'In Progress') {
+            ahead.innerHTML = '<i class="fas fa-stethoscope"></i> ';
+            ahead.appendChild(document.createTextNode('You are being seen now'));
+            side.appendChild(ahead);
+        }
+        card.appendChild(side);
+        return card;
+    }
+
+    function render(data) {
+        section.hidden = !data.entries || data.entries.length === 0;
+        var fragment = document.createDocumentFragment();
+        (data.entries || []).forEach(function (entry) {
+            fragment.appendChild(buildCard(entry));
+        });
+        list.innerHTML = '';
+        list.appendChild(fragment);
+    }
+
+    function poll() {
+        if (document.hidden) return;
+        fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
+            .then(function (response) {
+                if (!response.ok) throw new Error('status ' + response.status);
+                return response.json();
+            })
+            .then(render)
+            .catch(function () {
+                // Transient errors are ignored; the next tick retries.
+            });
+    }
+
+    function startPolling() {
+        if (pollTimer) return;
+        pollTimer = setInterval(poll, 5000);
+        poll();
+    }
+
+    function stopPolling() {
+        if (!pollTimer) return;
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stopPolling();
+        else startPolling();
+    });
+    window.addEventListener('pagehide', stopPolling);
+
+    startPolling();
+})();
+</script>
 {% endblock %}

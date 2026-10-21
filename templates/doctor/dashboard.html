@@ -16,16 +16,73 @@
                 <h3>{{ today_appointments|length }}</h3>
                 <p>Today's Appointments</p>
             </div>
+            <div class="stat-card primary">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>{{ upcoming_appointments|length }}</h3>
+                <p>Upcoming Appointments</p>
+            </div>
             <div class="stat-card">
                 <i class="fas fa-clock"></i>
                 <h3>{{ pending_appointments|length }}</h3>
                 <p>Pending Requests</p>
             </div>
-            <div class="stat-card">
+            <div class="stat-card success">
                 <i class="fas fa-check-circle"></i>
                 <h3>{{ completed_appointments|length }}</h3>
                 <p>Completed</p>
             </div>
+            <div class="stat-card danger">
+                <i class="fas fa-times-circle"></i>
+                <h3>{{ cancelled_count }}</h3>
+                <p>Cancelled</p>
+            </div>
+            <div class="stat-card warning">
+                <i class="fas fa-ban"></i>
+                <h3>{{ rejected_count }}</h3>
+                <p>Rejected</p>
+            </div>
+            <div class="stat-card primary">
+                <i class="fas fa-stream"></i>
+                <h3>{{ queue_counts.get('Waiting', 0) }}</h3>
+                <p>Waiting in Queue</p>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <a href="{{ url_for('doctor_notifications') }}" class="action-card">
+                <i class="fas fa-bell"></i>
+                <h3>
+                    {% if unread_notifications > 0 %}
+                    {{ unread_notifications }} Unread Notification{{ 's' if unread_notifications != 1 else '' }}
+                    {% else %}
+                    Notifications
+                    {% endif %}
+                </h3>
+                <p>Booking, confirmation and cancellation updates</p>
+            </a>
+            <a href="{{ url_for('doctor_queue_page') }}" class="action-card">
+                <i class="fas fa-stream"></i>
+                <h3>Live Patient Queue</h3>
+                <p>
+                    {{ queue_counts.get('Waiting', 0) }} waiting &middot;
+                    {{ queue_counts.get('In Progress', 0) }} in progress
+                </p>
+            </a>
+            <a href="{{ url_for('doctor_appointments') }}" class="action-card">
+                <i class="fas fa-list-check"></i>
+                <h3>All Appointments</h3>
+                <p>Search, filter and manage every visit</p>
+            </a>
+            <a href="{{ url_for('doctor_prescriptions') }}" class="action-card">
+                <i class="fas fa-file-prescription"></i>
+                <h3>Prescriptions</h3>
+                <p>Write and manage patient prescriptions</p>
+            </a>
+            <a href="{{ url_for('doctor_feedback') }}" class="action-card">
+                <i class="fas fa-star"></i>
+                <h3>Patient Feedback</h3>
+                <p>See ratings and reviews from your patients</p>
+            </a>
         </div>
         
         <!-- Today's Appointments -->
@@ -76,6 +133,49 @@
             {% endif %}
         </div>
         
+        <!-- Upcoming Appointments -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
+            {% if upcoming_appointments %}
+            <div class="appointments-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Phone</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Reason</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in upcoming_appointments %}
+                        <tr>
+                            <td><strong>{{ appointment.patient_name }}</strong></td>
+                            <td>{{ appointment.patient_phone or 'N/A' }}</td>
+                            <td>{{ appointment.date }}</td>
+                            <td><strong>{{ appointment.time_formatted }}</strong></td>
+                            <td>{{ appointment.reason or 'N/A' }}</td>
+                            <td>
+                                <a href="{{ url_for('doctor_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                                   class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>No upcoming appointments</p>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Pending Appointments -->
         <div class="dashboard-section">
             <h2><i class="fas fa-inbox"></i> Pending Appointment Requests</h2>
@@ -91,6 +191,10 @@
                         <p><i class="fas fa-phone"></i> {{ appointment.patient_phone }}</p>
                     </div>
                     <div class="appointment-actions">
+                        <a href="{{ url_for('doctor_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> Details
+                        </a>
                         <a href="{{ url_for('approve_appointment', appointment_id=appointment.appointment_id) }}" 
                            class="btn btn-success">
                             <i class="fas fa-check"></i> Approve

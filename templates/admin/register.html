@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Registration{% endblock %}
+
+{% block content %}
+<div class="auth-container auth-container--split">
+  <div class="auth-split">
+    <aside class="auth-visual auth-visual--admin">
+        <span class="auth-visual-badge"><i class="fas fa-user-shield"></i> Admin Registration</span>
+        <h2>Administrator access</h2>
+        <p>Create a privileged account to manage hospital operations and staff.</p>
+        <ul class="auth-visual-list">
+            <li><i class="fas fa-key"></i> Secure secret-key access</li>
+            <li><i class="fas fa-users"></i> Manage accounts &amp; roles</li>
+            <li><i class="fas fa-clipboard-list"></i> Full audit visibility</li>
+        </ul>
+    </aside>
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-user-shield"></i>
+            <h2>Admin Registration</h2>
+            <p>Administrator accounts require a secret key</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin_register') }}" class="auth-form">
+            <div class="form-group">
+                <label for="name"><i class="fas fa-user"></i> Full Name</label>
+                <input type="text" name="name" id="name" required placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" name="email" id="email" required placeholder="admin@hospital.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" name="password" id="password" required placeholder="Create password (min 6 characters)">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" required placeholder="Re-enter password">
+            </div>
+
+            <div class="form-group">
+                <label for="admin_secret_key"><i class="fas fa-key"></i> Admin Secret Key</label>
+                <input type="password" name="admin_secret_key" id="admin_secret_key" required placeholder="Enter the administrator secret key">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-user-shield"></i> Register as Admin
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('admin_login') }}">Admin Login</a></p>
+            <p>Patient? <a href="{{ url_for('register') }}">Register as Patient</a></p>
+            <p>Doctor? <a href="{{ url_for('doctor_register') }}">Register as Doctor</a></p>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

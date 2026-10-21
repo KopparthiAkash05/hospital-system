@@ -3,7 +3,18 @@
 {% block title %}Register - MediCare Hospital{% endblock %}
 
 {% block content %}
-<div class="auth-container">
+<div class="auth-container auth-container--split">
+  <div class="auth-split">
+    <aside class="auth-visual auth-visual--patient">
+        <span class="auth-visual-badge"><i class="fas fa-user-plus"></i> Patient Registration</span>
+        <h2>Join MediCare today</h2>
+        <p>Create your account to book appointments and keep your health records in one place.</p>
+        <ul class="auth-visual-list">
+            <li><i class="fas fa-calendar-plus"></i> Book in just a few clicks</li>
+            <li><i class="fas fa-file-medical"></i> Access your records anytime</li>
+            <li><i class="fas fa-shield-halved"></i> Your data stays private</li>
+        </ul>
+    </aside>
     <div class="auth-card">
         <div class="auth-header">
             <i class="fas fa-user-plus"></i>
@@ -35,6 +46,11 @@
             </div>
             
             <div class="form-group">
+                <label for="date_of_birth"><i class="fas fa-calendar"></i> Date of Birth</label>
+                <input type="date" name="date_of_birth" id="date_of_birth" placeholder="Select your date of birth">
+            </div>
+
+            <div class="form-group">
                 <label for="gender"><i class="fas fa-venus-mars"></i> Gender</label>
                 <select name="gender" id="gender" required>
                     <option value="">Select Gender</option>
@@ -48,6 +64,18 @@
     <label for="address"><i class="fas fa-home"></i> Address</label>
     <textarea name="address" id="address" rows="2" placeholder="Enter your full address"></textarea>
 </div>
+
+            <!-- <div class="form-row">
+                <div class="form-group">
+                    <label for="emergency_contact_name"><i class="fas fa-user-shield"></i> Emergency Contact</label>
+                    <input type="text" name="emergency_contact_name" id="emergency_contact_name" placeholder="Contact name">
+                </div>
+
+                <div class="form-group">
+                    <label for="emergency_contact_phone"><i class="fas fa-phone-volume"></i> Emergency Phone</label>
+                    <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" placeholder="Contact number">
+                </div>
+            </div> -->
             
             <div class="form-group">
                 <label for="password"><i class="fas fa-lock"></i> Password</label>
@@ -61,7 +89,10 @@
         
         <div class="auth-footer">
             <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            <p>Registering as a doctor? <a href="{{ url_for('doctor_register') }}">Doctor Register</a></p>
+            <p>Registering as an admin? <a href="{{ url_for('admin_register') }}">Admin Register</a></p>
         </div>
     </div>
+  </div>
 </div>
 {% endblock %}

@@ -6,15 +6,59 @@
 <div class="container">
     <div class="page-header">
         <h1><i class="fas fa-calendar-alt"></i> All Appointments</h1>
+        <p>Search, filter and manage every appointment assigned to you</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('doctor_appointments') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search Patient</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Name, email or phone"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="status"><i class="fas fa-filter"></i> Status</label>
+                    <select name="status" id="status">
+                        <option value="">All Statuses</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>
+                            {{ status }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date_filter"><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" name="date_filter" id="date_filter" value="{{ filter_date if filter_date else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('doctor_appointments') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
     
+    {% if appointments %}
+    <p class="results-count">Found {{ appointments|length }} appointment(s)</p>
     <div class="dashboard-section">
-        {% if appointments %}
         <div class="appointments-table">
-            <table>
+    <table>
     <thead>
         <tr>
             <th>Patient Name</th>
+            <th>Phone</th>
+            <th>Department</th>
             <th>Date</th>
             <th>Time</th>
             <th>Status</th>
@@ -25,6 +69,8 @@
         {% for appointment in appointments %}
         <tr>
             <td><strong>{{ appointment.patient_name }}</strong></td>
+            <td>{{ appointment.patient_phone or 'N/A' }}</td>
+            <td>{{ appointment.department_name or 'N/A' }}</td>
             <td>{{ appointment.date }}</td>
             <td>{{ appointment.time_formatted }}</td>
             <td>
@@ -33,47 +79,81 @@
                 </span>
             </td>
             <td>
-                {% if appointment.status != 'Completed' %}
-                <form action="{{ url_for('complete_appointment') }}" method="POST">
-                    <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
-                    
-                    <input type="number" name="follow_up_days" min="0" max="15" value="0" aria-label="Follow-up days for {{ appointment.patient_name }}">
-                    
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <i class="fas fa-check"></i> Complete
-                    </button>
-                </form>
-                {% else %}
-                <span class="text-success"><i class="fas fa-check-circle"></i> Completed</span>
-                {% endif %}
+                <div class="appointment-actions">
+                    <a href="{{ url_for('doctor_appointment_detail', appointment_id=appointment.appointment_id) }}"
+                       class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i> Details
+                    </a>
+
+                    {% if appointment.status == 'Pending' %}
+                    <a href="{{ url_for('approve_appointment', appointment_id=appointment.appointment_id) }}"
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-check"></i> Approve
+                    </a>
+                    <a href="{{ url_for('reject_appointment', appointment_id=appointment.appointment_id) }}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to reject this appointment?')">
+                        <i class="fas fa-times"></i> Reject
+                    </a>
+                    {% elif appointment.status == 'Approved' %}
+                    <form action="{{ url_for('complete_appointment') }}" method="POST" class="complete-form">
+                        <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
+                        <input type="number" name="follow_up_days" min="0" max="15" value="0"
+                               class="follow-up-input"
+                               aria-label="Follow-up days for {{ appointment.patient_name }}">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="fas fa-check"></i> Complete
+                        </button>
+                    </form>
+                    <a href="{{ url_for('doctor_cancel_appointment', appointment_id=appointment.appointment_id) }}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    {% elif appointment.status == 'Completed' %}
+                    <span class="text-success"><i class="fas fa-check-circle"></i> Completed</span>
+                    {% if appointment.prescription_id %}
+                    <a href="{{ url_for('doctor_prescription_detail', prescription_id=appointment.prescription_id) }}"
+                       class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-prescription"></i> View Prescription
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('doctor_prescription_new', appointment_id=appointment.appointment_id) }}"
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-file-prescription"></i> Prescribe
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
         </div>
-        {% else %}
+    </div>
+    {% else %}
         <div class="empty-state">
-            <i class="fas fa-calendar-times"></i>
-            <p>No appointments found</p>
-        </div>
+        <i class="fas fa-calendar-times"></i>
+        <p>No appointments found</p>
+        {% if search or status_filter or filter_date %}
+        <a href="{{ url_for('doctor_appointments') }}" class="btn btn-primary">
+            <i class="fas fa-redo"></i> Clear Filters
+        </a>
         {% endif %}
     </div>
-</div>
+    {% endif %}
+    </div>
 <script>
-    // Ensure form submits the correct number even if "-" is displayed
-    document.querySelectorAll('.complete-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const input = this.querySelector('.follow-up-input');
-            if (input.value === '-') {
-                input.value = input.dataset.real || '0';
-            }
-            
-            // Validate 1-15 or 0
-            const val = parseInt(input.value);
-            if (isNaN(val) || val < 0 || val > 15) {
-                e.preventDefault();
-                alert('Please enter a number between 0 and 15.');
+    // Validate the follow-up value before the completion request is sent.
+    document.querySelectorAll('.complete-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            const input = form.querySelector('.follow-up-input');
+            const value = parseInt(input.value, 10);
+
+            if (isNaN(value) || value < 0 || value > 15) {
+                event.preventDefault();
+                alert('Please enter a follow-up between 0 and 15 days.');
             }
         });
     });

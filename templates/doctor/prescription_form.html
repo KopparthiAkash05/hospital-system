@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if prescription else 'New' }} Prescription - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>
+            <i class="fas fa-file-prescription"></i>
+            {% if prescription %}Edit Prescription #{{ prescription.prescription_id }}
+            {% else %}New Prescription{% endif %}
+        </h1>
+        <p>
+            Appointment #{{ appointment.appointment_id }} &middot;
+            {{ appointment.patient_name or 'Unknown patient' }}
+            {% if appointment.date %} &middot; {{ appointment.date }}{% endif %}
+            {% if appointment.time_formatted %} {{ appointment.time_formatted }}{% endif %}
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="panel">
+        <form method="POST" id="prescription-form" class="settings-form"
+              action="{{ url_for('doctor_prescription_update', prescription_id=prescription.prescription_id) if prescription else url_for('doctor_prescription_create') }}">
+            {% if not prescription %}
+            <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
+            {% endif %}
+            <div class="form-group">
+                <label for="instructions">
+                    <i class="fas fa-notes-medical"></i> Instructions
+                    <small>(optional, up to {{ max_instructions_length }} characters)</small>
+                </label>
+                <textarea name="instructions" id="instructions" rows="3"
+                          maxlength="{{ max_instructions_length }}"
+                          list="instruction-suggestions"
+                          placeholder="e.g. Take after meals. Return for review after 5 days.">{{ instructions or '' }}</textarea>
+                <datalist id="instruction-suggestions">
+                    {% for suggestion in suggestions %}
+                    <option value="{{ suggestion }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-pills"></i> Prescribed Medicines</label>
+                <div class="appointments-table rx-table-wrap">
+                    <table class="rx-table" id="medicine-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Medicine Name</th>
+                                <th>Dosage</th>
+                                <th>Frequency</th>
+                                <th>Duration</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in medicines %}
+                            <tr class="medicine-row">
+                                <td class="rx-row-number">{{ loop.index }}</td>
+                                <td>
+                                    <input type="text" name="medicine_name"
+                                           value="{{ row.medicine_name }}"
+                                           maxlength="{{ max_name_length }}"
+                                           placeholder="e.g. Amoxicillin 500mg">
+                                </td>
+                                <td>
+                                    <input type="text" name="dosage"
+                                           value="{{ row.dosage }}"
+                                           maxlength="{{ max_field_length }}"
+                                           placeholder="e.g. 1 capsule">
+                                </td>
+                                <td>
+                                    <select name="frequency" class="rx-frequency"
+                                            data-custom-value="{{ custom_frequency_value }}"
+                                            aria-label="Frequency">
+                                        <option value="" {% if not row.frequency %}selected{% endif %}>Select frequency…</option>
+                                        {% for option in frequency_options %}
+                                        <option value="{{ option }}" {% if row.frequency == option %}selected{% endif %}>{{ option }}</option>
+                                        {% endfor %}
+                                        <option value="{{ custom_frequency_value }}" {% if row.frequency and row.frequency not in frequency_options %}selected{% endif %}>{{ custom_frequency_value }}</option>
+                                    </select>
+                                    <input type="text" name="frequency_custom"
+                                           class="rx-frequency-custom"
+                                           value="{{ row.frequency if (row.frequency and row.frequency not in frequency_options) else '' }}"
+                                           maxlength="{{ max_field_length }}"
+                                           placeholder="e.g. Every 6 hours"
+                                           aria-label="Custom frequency"
+                                           {% if not (row.frequency and row.frequency not in frequency_options) %}hidden{% endif %}>
+                                </td>
+                                <td>
+                                    <input type="text" name="duration"
+                                           value="{{ row.duration }}"
+                                           maxlength="{{ max_field_length }}"
+                                           placeholder="e.g. 5 days">
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm rx-remove-row"
+                                            title="Remove this medicine"
+                                            aria-label="Remove medicine row">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="appointment-actions mt-4">
+                    <button type="button" class="btn btn-secondary btn-sm" id="add-medicine-row">
+                        <i class="fas fa-plus"></i> Add Medicine
+                    </button>
+                </div>
+            </div>
+
+            <div class="appointment-actions mt-4">
+                <button type="submit" class="btn btn-primary" id="save-prescription">
+                    <i class="fas fa-save"></i>
+                    {% if prescription %}Save Changes{% else %}Save Prescription{% endif %}
+                </button>
+                <a href="{{ url_for('doctor_prescriptions') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Prescriptions
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    var table = document.getElementById('medicine-table');
+    if (!table) return;
+    var body = table.querySelector('tbody');
+
+    function frequencySelect(row) {
+        return row.querySelector('select[name="frequency"]');
+    }
+
+    function customInput(row) {
+        return row.querySelector('input[name="frequency_custom"]');
+    }
+
+    // Show and require the free-text box only for the "Custom" choice.
+    function syncCustom(row) {
+        var select = frequencySelect(row);
+        var custom = customInput(row);
+        if (!select || !custom) return;
+        var isCustom = select.value === select.getAttribute('data-custom-value');
+        custom.hidden = !isCustom;
+        custom.required = isCustom;
+        if (!isCustom) custom.value = '';
+    }
+
+    function resetRow(row) {
+        row.querySelectorAll('input').forEach(function (input) {
+            input.value = '';
+            input.required = false;
+            if (input.classList.contains('rx-frequency-custom')) {
+                input.hidden = true;
+            }
+        });
+        var select = frequencySelect(row);
+        if (select) select.value = '';
+        syncCustom(row);
+    }
+
+    function renumber() {
+        body.querySelectorAll('.medicine-row').forEach(function (row, index) {
+            var number = row.querySelector('.rx-row-number');
+            if (number) number.textContent = String(index + 1);
+        });
+    }
+
+    function addRow() {
+        var template = body.querySelector('.medicine-row');
+        var row = template ? template.cloneNode(true) : null;
+        if (!row) return;
+        resetRow(row);
+        body.appendChild(row);
+        renumber();
+    }
+
+    document.getElementById('add-medicine-row').addEventListener('click', addRow);
+
+    body.addEventListener('change', function (event) {
+        if (event.target.matches('select[name="frequency"]')) {
+            syncCustom(event.target.closest('.medicine-row'));
+        }
+    });
+
+    body.addEventListener('click', function (event) {
+        var removeBtn = event.target.closest('.rx-remove-row');
+        if (!removeBtn) return;
+        var rows = body.querySelectorAll('.medicine-row');
+        if (rows.length > 1) {
+            removeBtn.closest('.medicine-row').remove();
+            renumber();
+        } else {
+            resetRow(removeBtn.closest('.medicine-row'));
+        }
+    });
+
+    // Mirror the server rules: drop completely blank rows, require the rest,
+    // and lock the Save button so a double click cannot submit twice.
+    var form = document.getElementById('prescription-form');
+    var saveButton = document.getElementById('save-prescription');
+
+    // If a submission is blocked (e.g. shared validation script), editing
+    // the form again must unlock the Save button so the doctor can retry.
+    ['input', 'change'].forEach(function (eventName) {
+        form.addEventListener(eventName, function () {
+            if (saveButton) saveButton.disabled = false;
+        });
+    });
+
+    form.addEventListener('submit', function () {
+        if (saveButton) saveButton.disabled = true;
+        body.querySelectorAll('.medicine-row').forEach(function (row) {
+            var controls = row.querySelectorAll('input:not([name="frequency_custom"]), select');
+            var anyFilled = false;
+            controls.forEach(function (control) {
+                if (control.value.trim()) anyFilled = true;
+            });
+            if (!anyFilled) {
+                row.remove();
+            } else {
+                controls.forEach(function (control) { control.required = true; });
+                syncCustom(row);
+            }
+        });
+        renumber();
+    });
+})();
+</script>
+{% endblock %}

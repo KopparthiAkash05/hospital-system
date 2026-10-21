@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}My Prescriptions - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-file-prescription"></i> My Prescriptions</h1>
+        <p>Medicines prescribed after your completed visits, ready to download</p>
+    </div>
+
+    {% if prescriptions %}
+    <p class="results-count">{{ prescriptions|length }} prescription(s)</p>
+
+    <div class="dashboard-section">
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Doctor</th>
+                        <th>Visit</th>
+                        <th>Medicines</th>
+                        <th>Prescribed On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in prescriptions %}
+                    <tr>
+                        <td>{{ prescription.prescription_id }}</td>
+                        <td>
+                            <strong>Dr. {{ prescription.doctor_name or '-' }}</strong>
+                            {% if prescription.specialization %}
+                            <br><small>{{ prescription.specialization }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            #{{ prescription.appointment_id }}
+                            <br><small>{{ prescription.appointment_date }} {{ prescription.appointment_time_formatted }}</small>
+                        </td>
+                        <td><span class="badge badge-approved">{{ prescription.medicine_count }} medicine(s)</span></td>
+                        <td>{{ prescription.created_at.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            <div class="appointment-actions">
+                                <a href="{{ url_for('patient_prescription_detail', prescription_id=prescription.prescription_id) }}"
+                                   class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('patient_prescription_download', prescription_id=prescription.prescription_id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-download"></i> PDF
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-file-prescription"></i>
+        <p>No prescriptions yet &mdash; they appear here after your doctor writes one</p>
+        <a href="{{ url_for('patient_appointments') }}" class="btn btn-primary">
+            <i class="fas fa-calendar-alt"></i> My Appointments
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

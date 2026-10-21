@@ -13,7 +13,14 @@
     <div class="filter-section">
         <form method="GET" action="{{ url_for('view_doctors') }}" class="filter-form">
             <div class="form-group">
-                <label for="specialization">Filter by Specialization:</label>
+                <label for="search">Search:</label>
+                <input type="text" name="search" id="search"
+                       placeholder="Doctor name or specialization"
+                       value="{{ search if search else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="specialization">Specialization:</label>
                 <select name="specialization" id="specialization" onchange="this.form.submit()">
                     <option value="">All Specializations</option>
                     {% for spec in specializations %}
@@ -22,6 +29,25 @@
                     </option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="department">Department:</label>
+                <select name="department" id="department" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.department_id }}" {% if selected_department == dept.department_id|string %}selected{% endif %}>
+                        {{ dept.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="submit_doctors">&nbsp;</label>
+                <button type="submit" id="submit_doctors" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
             </div>
         </form>
     </div>
@@ -36,12 +62,30 @@
             <div class="doctor-info">
                 <h3>Dr. {{ doctor.name }}</h3>
                 <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                {% if doctor.department_name %}
+                <p><i class="fas fa-building"></i> {{ doctor.department_name }}</p>
+                {% endif %}
                 <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                {% if doctor.qualification %}
+                <p><i class="fas fa-graduation-cap"></i> {{ doctor.qualification }}</p>
+                {% endif %}
                 <p><i class="fas fa-envelope"></i> {{ doctor.email }}</p>
                 <p><i class="fas fa-phone"></i> {{ doctor.phone }}</p>
-                <p><i class="fas fa-clock"></i> {{ doctor.available_slots }}</p>
+                <p><i class="fas fa-clock"></i> {{ doctor.available_slots or 'Schedule on profile' }}</p>
+                <p>
+                    <i class="fas fa-circle"></i>
+                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
+                        {{ doctor.availability_status or 'Available' }}
+                    </span>
+                    {% if doctor.consultation_fee %}
+                    <span class="badge badge-approved">&#8377;{{ doctor.consultation_fee }}</span>
+                    {% endif %}
+                </p>
             </div>
             <div class="doctor-actions">
+                <a href="{{ url_for('doctor_profile', doctor_id=doctor.doctor_id) }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-id-card"></i> View Profile
+                </a>
                 <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
                     <i class="fas fa-calendar-plus"></i> Book Appointment
                 </a>
@@ -51,6 +95,11 @@
         <div class="empty-state">
             <i class="fas fa-search"></i>
             <p>No doctors found</p>
+            {% if search or request.args.get('specialization') or selected_department %}
+            <a href="{{ url_for('view_doctors') }}" class="btn btn-primary">
+                <i class="fas fa-redo"></i> Clear Filters
+            </a>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

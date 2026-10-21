@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Departments - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-building"></i> Departments</h1>
+        <p>Browse our departments and the doctors working in each one</p>
+    </div>
+
+    {% if departments %}
+    <div class="doctors-grid">
+        {% for department in departments %}
+        <div class="doctor-card">
+            <div class="doctor-avatar">
+                <i class="fas fa-stethoscope"></i>
+            </div>
+            <div class="doctor-info">
+                <h3>{{ department.name }}</h3>
+                {% if department.description %}
+                <p><i class="fas fa-align-left"></i> {{ department.description }}</p>
+                {% endif %}
+                <p><i class="fas fa-user-md"></i>
+                    {{ department.doctor_count }}
+                    {{ 'doctor' if department.doctor_count == 1 else 'doctors' }}
+                </p>
+            </div>
+            <div class="doctor-actions">
+                <a href="{{ url_for('patient_department_detail', department_id=department.department_id) }}" class="btn btn-primary btn-block">
+                    <i class="fas fa-users"></i> View Doctors
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-building"></i>
+        <p>No departments have been set up yet</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

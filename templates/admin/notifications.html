@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications &amp; Reminders - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-bell"></i> Notifications &amp; Reminders</h1>
+        <p>Monitor in-app notifications and the automated email reminder queue.</p>
+    </div>
+
+    <!-- Reminder monitoring -->
+    <div class="admin-metrics">
+        <div class="metric-card">
+            <h3>Upcoming Reminders Pending</h3>
+            <p class="metric-value">{{ reminder_pending }}</p>
+            <small class="metric-note">Appointments today or later not yet reminded</small>
+        </div>
+        <div class="metric-card metric-card--accent">
+            <h3>Follow-Up Reminders Pending</h3>
+            <p class="metric-value">{{ follow_up_pending }}</p>
+            <small class="metric-note">Of {{ follow_up_total }} follow-up(s) scheduled</small>
+        </div>
+        <div class="metric-card metric-card--success">
+            <h3>Notifications</h3>
+            <p class="metric-value">{{ total_notifications }}</p>
+            <small class="metric-note">{{ unread_total }} unread</small>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <h2><i class="fas fa-chart-simple"></i> Notifications by Role</h2>
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <i class="fas fa-user-injured"></i>
+                <h3>{{ type_totals.get('patient', 0) }}</h3>
+                <p>Patients</p>
+            </div>
+            <div class="stat-card success">
+                <i class="fas fa-user-md"></i>
+                <h3>{{ type_totals.get('doctor', 0) }}</h3>
+                <p>Doctors</p>
+            </div>
+            <div class="stat-card warning">
+                <i class="fas fa-user-shield"></i>
+                <h3>{{ type_totals.get('admin', 0) }}</h3>
+                <p>Admins</p>
+            </div>
+            <div class="stat-card danger">
+                <i class="fas fa-envelope-open"></i>
+                <h3>{{ unread_total }}</h3>
+                <p>Unread (all roles)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_notifications') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Title or message"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="user_type"><i class="fas fa-user"></i> Role</label>
+                    <select name="user_type" id="user_type">
+                        <option value="">All Roles</option>
+                        <option value="patient" {% if user_type_filter == 'patient' %}selected{% endif %}>Patient</option>
+                        <option value="doctor" {% if user_type_filter == 'doctor' %}selected{% endif %}>Doctor</option>
+                        <option value="admin" {% if user_type_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="read"><i class="fas fa-envelope"></i> Status</label>
+                    <select name="read" id="read">
+                        <option value="">All</option>
+                        <option value="unread" {% if read_filter == 'unread' %}selected{% endif %}>Unread</option>
+                        <option value="read" {% if read_filter == 'read' %}selected{% endif %}>Read</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_notifications') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if notifications %}
+    <p class="results-count">Found {{ notifications|length }} notification(s)</p>
+
+    <div class="dashboard-section">
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date &amp; Time</th>
+                        <th>Recipient</th>
+                        <th>Title</th>
+                        <th>Message</th>
+                        <th>Appointment</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in notifications %}
+                    <tr>
+                        <td>{{ note.notification_id }}</td>
+                        <td>{{ note.created_at|dt12 }}</td>
+                        <td>
+                            <span class="badge badge-pending">{{ (note.user_type or 'system')|title }}</span>
+                            <br><small>#{{ note.user_id }}</small>
+                        </td>
+                        <td><strong>{{ note.title }}</strong></td>
+                        <td>{{ note.message }}</td>
+                        <td>{% if note.appointment_id %}#{{ note.appointment_id }}{% else %}-{% endif %}</td>
+                        <td>
+                            {% if note.is_read %}
+                            <span class="badge badge-completed">Read</span>
+                            {% else %}
+                            <span class="badge badge-pending">Unread</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-bell-slash"></i>
+        <p>No notifications found</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Profile - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-user-shield"></i>
+            <h2>Admin Profile</h2>
+            <p>Administrator #{{ admin.admin_id }}</p>
+        </div>
+
+        <div class="auth-form">
+            <div class="form-group">
+                <label for="current_name"><i class="fas fa-user"></i> Name</label>
+                <input type="text" id="current_name" value="{{ admin.name }}" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="current_email"><i class="fas fa-envelope"></i> Email</label>
+                <input type="text" id="current_email" value="{{ admin.email }}" disabled>
+            </div>
+        </div>
+
+        <form method="POST" class="auth-form">
+            <input type="hidden" name="action" value="profile">
+
+            <div class="form-group">
+                <label for="name"><i class="fas fa-user"></i> Display Name</label>
+                <input type="text" name="name" id="name" value="{{ admin.name }}" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Update Profile
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <div class="dashboard-section">
+        <h2><i class="fas fa-lock"></i> Change Password</h2>
+        <form method="POST" action="{{ url_for('admin_profile') }}" class="settings-form">
+            <input type="hidden" name="action" value="password">
+
+            <div class="form-group">
+                <label for="old_password"><i class="fas fa-key"></i> Old Password</label>
+                <input type="password" name="old_password" id="old_password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password"><i class="fas fa-lock"></i> New Password</label>
+                <input type="password" name="new_password" id="new_password" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password"><i class="fas fa-lock"></i> Confirm New Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" required minlength="6">
+            </div>
+
+            <button type="submit" class="btn btn-warning">
+                <i class="fas fa-sync-alt"></i> Update Password
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Details - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-check"></i> Appointment #{{ appointment.appointment_id }}</h1>
+        <p>
+            {{ appointment.patient_name }} &middot;
+            <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+        </p>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Basic patient information only: no medical records are shown. -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-user"></i> Patient Information</h2>
+            <div class="doctor-summary">
+                <p><strong>Name:</strong> {{ appointment.patient_name }}</p>
+                <p><strong>Age:</strong> {{ appointment.patient_age or 'N/A' }}</p>
+                <p><strong>Gender:</strong> {{ appointment.patient_gender or 'N/A' }}</p>
+                <p><strong>Phone:</strong> {{ appointment.patient_phone or 'N/A' }}</p>
+                <p><strong>Email:</strong> {{ appointment.patient_email or 'N/A' }}</p>
+                <p><strong>Address:</strong> {{ appointment.patient_address or 'N/A' }}</p>
+                {% if appointment.patient_emergency_contact %}
+                <p><strong>Emergency Contact:</strong> {{ appointment.patient_emergency_contact }}</p>
+                <p><strong>Emergency Phone:</strong> {{ appointment.patient_emergency_phone or 'N/A' }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Visit details -->
+        <div class="dashboard-section">
+            <h2><i class="fas fa-info-circle"></i> Visit Details</h2>
+            <div class="doctor-summary">
+                <p><strong>Doctor:</strong> Dr. {{ appointment.doctor_name }}</p>
+                <p><strong>Specialization:</strong> {{ appointment.specialization or 'N/A' }}</p>
+                {% if appointment.department_name %}
+                <p><strong>Department:</strong> {{ appointment.department_name }}</p>
+                {% endif %}
+                <p><strong>Date:</strong> {{ appointment.date }}</p>
+                <p><strong>Time:</strong> {{ appointment.time_formatted }}</p>
+                <p><strong>Reason for visit:</strong> {{ appointment.reason or 'Not provided' }}</p>
+                {% if appointment.follow_up_date %}
+                <p><strong>Follow-up on:</strong> {{ appointment.follow_up_date }}</p>
+                {% endif %}
+                <p><strong>Booked on:</strong> {{ appointment.created_at|dt12 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="quick-actions">
+        {% if appointment.status == 'Pending' %}
+        <a href="{{ url_for('approve_appointment', appointment_id=appointment.appointment_id) }}" class="action-card">
+            <i class="fas fa-check"></i>
+            <h3>Confirm Appointment</h3>
+            <p>Accept this booking request</p>
+        </a>
+        <a href="{{ url_for('reject_appointment', appointment_id=appointment.appointment_id) }}" class="action-card"
+           onclick="return confirm('Are you sure you want to reject this appointment?')">
+            <i class="fas fa-times"></i>
+            <h3>Reject Appointment</h3>
+            <p>Decline and release the slot</p>
+        </a>
+        {% elif appointment.status == 'Approved' %}
+        <form action="{{ url_for('complete_appointment') }}" method="POST" class="action-card action-card--form">
+            <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
+            <i class="fas fa-check-circle"></i>
+            <h3>Mark as Completed</h3>
+            <p>Finish the visit and optionally set a follow-up</p>
+            <div class="form-group">
+                <label for="follow_up_days">Follow-up in (days, 0 for none)</label>
+                <input type="number" name="follow_up_days" id="follow_up_days" min="0" max="15" value="0">
+            </div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Complete &amp; Save
+            </button>
+        </form>
+        <a href="{{ url_for('doctor_cancel_appointment', appointment_id=appointment.appointment_id) }}" class="action-card"
+           onclick="return confirm('Are you sure you want to cancel this appointment?')">
+            <i class="fas fa-times"></i>
+            <h3>Cancel Appointment</h3>
+            <p>Cancel the confirmed visit</p>
+        </a>
+        {% elif appointment.status == 'Completed' %}
+        {% if prescription_id %}
+        <a href="{{ url_for('doctor_prescription_detail', prescription_id=prescription_id) }}" class="action-card">
+            <i class="fas fa-file-prescription"></i>
+            <h3>View Prescription</h3>
+            <p>See the medicines prescribed for this visit</p>
+        </a>
+        {% else %}
+        <a href="{{ url_for('doctor_prescription_new', appointment_id=appointment.appointment_id) }}" class="action-card">
+            <i class="fas fa-file-prescription"></i>
+            <h3>Write Prescription</h3>
+            <p>Record medicines and instructions for this visit</p>
+        </a>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- This patient's history with this doctor -->
+    <div class="dashboard-section">
+        <h2><i class="fas fa-history"></i> History with {{ appointment.patient_name }}</h2>
+        {% if history %}
+        <div class="appointments-table appointments-table--compact">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history %}
+                    <tr>
+                        <td><strong>{{ row.date }}</strong></td>
+                        <td>{{ row.time_formatted }}</td>
+                        <td><span class="badge badge-{{ row.status.lower() }}">{{ row.status }}</span></td>
+                        <td>{{ row.reason or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No previous appointments with this patient</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="filter-section">
+        <a href="{{ url_for('doctor_appointments') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Back to Appointments
+        </a>
+    </div>
+</div>
+{% endblock %}

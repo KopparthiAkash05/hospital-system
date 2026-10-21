@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Live Patient Queue - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-stream"></i> Live Patient Queue</h1>
+        <p>
+            {{ queue_date_pretty }} &middot; one shared queue for website bookings and walk-ins &middot;
+            local time <strong id="queue-now">{{ now_label }}</strong>
+        </p>
+    </div>
+
+    <!-- Queue day navigation -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('doctor_queue_page') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="queue-date"><i class="fas fa-calendar"></i> Queue day</label>
+                    <input type="date" name="date" id="queue-date" value="{{ queue_date_str }}">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> View day
+                    </button>
+                    <a href="{{ url_for('doctor_queue_page') }}" class="btn btn-secondary">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Live summary -->
+    <div class="queue-summary" id="queue-summary">
+        <div class="queue-chip queue-chip-waiting">
+            <span class="queue-chip-value" id="count-waiting">{{ counts.get('Waiting', 0) }}</span>
+            <span class="queue-chip-label">Waiting</span>
+        </div>
+        <div class="queue-chip queue-chip-progress">
+            <span class="queue-chip-value" id="count-in-progress">{{ counts.get('In Progress', 0) }}</span>
+            <span class="queue-chip-label">In Progress</span>
+        </div>
+        <div class="queue-chip queue-chip-done">
+            <span class="queue-chip-value" id="count-completed">{{ counts.get('Completed', 0) }}</span>
+            <span class="queue-chip-label">Completed</span>
+        </div>
+        <div class="queue-chip queue-chip-skipped">
+            <span class="queue-chip-value" id="count-skipped">{{ counts.get('Skipped', 0) }}</span>
+            <span class="queue-chip-label">Skipped</span>
+        </div>
+        <div class="queue-chip queue-chip-cancelled">
+            <span class="queue-chip-value" id="count-cancelled">{{ counts.get('Cancelled', 0) }}</span>
+            <span class="queue-chip-label">Cancelled</span>
+        </div>
+        <div class="queue-chip queue-chip-last">
+            <span class="queue-chip-value" id="queue-last-number">{{ last_number }}</span>
+            <span class="queue-chip-label">Last number</span>
+        </div>
+    </div>
+
+    {% if in_progress_entry %}
+    <div class="queue-now-serving">
+        <i class="fas fa-stethoscope"></i>
+        Now serving <strong>{{ in_progress_entry.label }}</strong>
+        &mdash; {{ in_progress_entry.display_name }}
+    </div>
+    {% endif %}
+
+    <!-- Walk-in registration -->
+    <div class="panel queue-walkin-panel">
+        <form method="POST" action="{{ url_for('queue_add_walk_in') }}" class="queue-walkin-form">
+            <input type="hidden" name="queue_date" value="{{ queue_date_str }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="walk_in_name"><i class="fas fa-user-plus"></i> Walk-in patient name</label>
+                    <input type="text" name="walk_in_name" id="walk_in_name"
+                           maxlength="150" placeholder="e.g. Anita Verma" required>
+                </div>
+                <div class="form-group">
+                    <label for="walk_in_phone"><i class="fas fa-phone"></i> Phone <small>(optional)</small></label>
+                    <input type="text" name="walk_in_phone" id="walk_in_phone"
+                           maxlength="30" placeholder="e.g. 98765 43210">
+                </div>
+                <div class="form-group queue-walkin-submit">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add to queue
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <p class="results-count"><span id="queue-entry-total">{{ entries|length }}</span> queue entr{{ 'y' if entries|length == 1 else 'ies' }} for {{ queue_date_pretty }}</p>
+    <div class="dashboard-section" {% if not entries %}hidden{% endif %} id="queue-table-section">
+        <div class="appointments-table queue-table-wrap">
+            <table class="queue-table" id="queue-table">
+                <thead>
+                    <tr>
+                        <th>Queue #</th>
+                        <th>Patient</th>
+                        <th>Visit</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="queue-tbody">
+                    {% for entry in entries %}
+                    <tr data-queue-id="{{ entry.queue_id }}" data-status="{{ entry.status }}">
+                        <td class="queue-number-cell"><strong>{{ entry.label }}</strong></td>
+                        <td>
+                            <strong>{{ entry.display_name }}</strong>
+                            {% if entry.kind == 'walk-in' %}
+                            <span class="queue-kind">Walk-in{% if entry.walk_in_phone %} &middot; {{ entry.walk_in_phone }}{% endif %}</span>
+                            {% elif entry.appointment_id %}
+                            <span class="queue-kind">Appointment #{{ entry.appointment_id }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.appointment_time_12hr %}
+                            <i class="fas fa-clock"></i> {{ entry.appointment_time_12hr }}
+                            {% else %}
+                            <span class="text-muted">Just arrived</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ entry.status|lower|replace(' ', '-') }}">{{ entry.status }}</span>
+                        </td>
+                        <td>
+                            <div class="appointment-actions queue-row-actions">
+                                {% if entry.status == 'Waiting' %}
+                                <form method="POST" action="{{ url_for('queue_start_entry', queue_id=entry.queue_id) }}">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-play"></i> Start
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('queue_skip_entry', queue_id=entry.queue_id) }}">
+                                    <button type="submit" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-forward"></i> Skip
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('queue_cancel_entry', queue_id=entry.queue_id) }}"
+                                      onsubmit="return confirm('Remove {{ entry.label }} from the queue?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i> Remove
+                                    </button>
+                                </form>
+                                {% elif entry.status == 'In Progress' %}
+                                <form method="POST" action="{{ url_for('queue_complete_entry', queue_id=entry.queue_id) }}">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Complete
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('queue_cancel_entry', queue_id=entry.queue_id) }}"
+                                      onsubmit="return confirm('Remove {{ entry.label }} from the queue?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i> Remove
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted">&mdash;</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="empty-state" id="queue-empty" {% if entries %}hidden{% endif %}>
+        <i class="fas fa-stream"></i>
+        <p>No patients in the queue for {{ queue_date_pretty }} yet</p>
+        <span class="text-muted">Approved appointments and walk-ins appear here with their queue numbers.</span>
+    </div>
+</div>
+
+<script>
+(function () {
+    var config = {
+        date: {{ queue_date_str|tojson }},
+        statusUrl: {{ url_for('doctor_queue_status')|tojson }},
+        queueBase: {{ url_for('doctor_queue_page')|tojson }}
+    };
+
+    var tbody = document.getElementById('queue-tbody');
+    if (!tbody) return;
+
+    var pollTimer = null;
+
+    function badgeClass(status) {
+        return 'badge badge-' + status.toLowerCase().replace(/\s+/g, '-');
+    }
+
+    function actionButton(entry, action, icon, label, btnClass, confirmText) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = config.queueBase + '/entry/' + entry.queue_id + '/' + action;
+        if (confirmText) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm(confirmText)) event.preventDefault();
+            });
+        }
+        var button = document.createElement('button');
+        button.type = 'submit';
+        button.className = 'btn btn-sm ' + btnClass;
+        button.innerHTML = '<i class="fas ' + icon + '"></i> ' + label;
+        form.appendChild(button);
+        return form;
+    }
+
+    function buildRow(entry) {
+        var row = document.createElement('tr');
+        row.setAttribute('data-queue-id', entry.queue_id);
+        row.setAttribute('data-status', entry.status);
+
+        var numberCell = document.createElement('td');
+        numberCell.className = 'queue-number-cell';
+        numberCell.innerHTML = '<strong></strong>';
+        numberCell.querySelector('strong').textContent = entry.label;
+        row.appendChild(numberCell);
+
+        var patientCell = document.createElement('td');
+        var strong = document.createElement('strong');
+        strong.textContent = entry.display_name;
+        patientCell.appendChild(strong);
+        var kind = document.createElement('span');
+        kind.className = 'queue-kind';
+        if (entry.kind === 'walk-in') {
+            kind.textContent = 'Walk-in' + (entry.walk_in_phone ? ' · ' + entry.walk_in_phone : '');
+        } else if (entry.appointment_id) {
+            kind.textContent = 'Appointment #' + entry.appointment_id;
+        }
+        patientCell.appendChild(kind);
+        row.appendChild(patientCell);
+
+        var visitCell = document.createElement('td');
+        if (entry.appointment_time_12hr) {
+            visitCell.innerHTML = '<i class="fas fa-clock"></i> ';
+            visitCell.appendChild(document.createTextNode(entry.appointment_time_12hr));
+        } else {
+            visitCell.className = 'text-muted';
+            visitCell.textContent = 'Just arrived';
+        }
+        row.appendChild(visitCell);
+
+        var statusCell = document.createElement('td');
+        var badge = document.createElement('span');
+        badge.className = badgeClass(entry.status);
+        badge.textContent = entry.status;
+        statusCell.appendChild(badge);
+        row.appendChild(statusCell);
+
+        var actionsCell = document.createElement('td');
+        actionsCell.className = 'appointment-actions queue-row-actions';
+        if (entry.status === 'Waiting') {
+            actionsCell.appendChild(actionButton(entry, 'start', 'fa-play', 'Start', 'btn-success'));
+            actionsCell.appendChild(actionButton(entry, 'skip', 'fa-forward', 'Skip', 'btn-secondary'));
+            actionsCell.appendChild(actionButton(entry, 'cancel', 'fa-times', 'Remove', 'btn-danger',
+                'Remove ' + entry.label + ' from the queue?'));
+        } else if (entry.status === 'In Progress') {
+            actionsCell.appendChild(actionButton(entry, 'complete', 'fa-check', 'Complete', 'btn-success'));
+            actionsCell.appendChild(actionButton(entry, 'cancel', 'fa-times', 'Remove', 'btn-danger',
+                'Remove ' + entry.label + ' from the queue?'));
+        } else {
+            actionsCell.innerHTML = '<span class="text-muted">&mdash;</span>';
+        }
+        row.appendChild(actionsCell);
+        return row;
+    }
+
+    function setCount(id, value) {
+        var node = document.getElementById(id);
+        if (node) node.textContent = value;
+    }
+
+    function render(data) {
+        setCount('count-waiting', data.counts['Waiting'] || 0);
+        setCount('count-in-progress', data.counts['In Progress'] || 0);
+        setCount('count-completed', data.counts['Completed'] || 0);
+        setCount('count-skipped', data.counts['Skipped'] || 0);
+        setCount('count-cancelled', data.counts['Cancelled'] || 0);
+        setCount('queue-last-number', data.last_number || 0);
+
+        var total = document.getElementById('queue-entry-total');
+        if (total) total.textContent = data.entries.length;
+
+        var tableSection = document.getElementById('queue-table-section');
+        if (tableSection) tableSection.hidden = data.entries.length === 0;
+        var emptyState = document.getElementById('queue-empty');
+        if (emptyState) emptyState.hidden = data.entries.length > 0;
+
+        var fragment = document.createDocumentFragment();
+        data.entries.forEach(function (entry) {
+            fragment.appendChild(buildRow(entry));
+        });
+        tbody.innerHTML = '';
+        tbody.appendChild(fragment);
+    }
+
+    function poll() {
+        if (document.hidden) return;
+        fetch(config.statusUrl + '?date=' + encodeURIComponent(config.date), {
+            headers: { 'Accept': 'application/json' }
+        }).then(function (response) {
+            if (!response.ok) throw new Error('status ' + response.status);
+            return response.json();
+        }).then(render).catch(function () {
+            // Transient errors are ignored; the next tick retries.
+        });
+    }
+
+    function startPolling() {
+        if (pollTimer) return;
+        pollTimer = setInterval(poll, 5000);
+        poll();
+    }
+
+    function stopPolling() {
+        if (!pollTimer) return;
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stopPolling();
+        else startPolling();
+    });
+    window.addEventListener('pagehide', stopPolling);
+
+    startPolling();
+})();
+</script>
+{% endblock %}

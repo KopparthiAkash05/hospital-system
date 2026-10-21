@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Prescriptions - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-file-prescription"></i> Prescriptions</h1>
+        <p>Prescriptions you have written, plus completed visits that still need one</p>
+    </div>
+
+    <!-- Completed appointments without a prescription -->
+    {% if eligible_appointments %}
+    <div class="dashboard-section">
+        <h2><i class="fas fa-plus-circle"></i> Waiting for a Prescription</h2>
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Appointment</th>
+                        <th>Patient</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in eligible_appointments %}
+                    <tr>
+                        <td>#{{ appointment.appointment_id }}</td>
+                        <td><strong>{{ appointment.patient_name or '-' }}</strong></td>
+                        <td>{{ appointment.date }}</td>
+                        <td>{{ appointment.time_formatted }}</td>
+                        <td>
+                            <a href="{{ url_for('doctor_prescription_new', appointment_id=appointment.appointment_id) }}"
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-file-prescription"></i> Create Prescription
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Existing prescriptions -->
+    <div class="dashboard-section">
+        <h2><i class="fas fa-list"></i> My Prescriptions</h2>
+
+        {% if prescriptions %}
+        <p class="results-count">{{ prescriptions|length }} prescription(s) written</p>
+
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Appointment</th>
+                        <th>Patient</th>
+                        <th>Visit Date</th>
+                        <th>Medicines</th>
+                        <th>Written On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in prescriptions %}
+                    <tr>
+                        <td>{{ prescription.prescription_id }}</td>
+                        <td>#{{ prescription.appointment_id }}</td>
+                        <td><strong>{{ prescription.patient_name or '-' }}</strong></td>
+                        <td>
+                            {{ prescription.appointment_date }}
+                            <br><small>{{ prescription.appointment_time_formatted }}</small>
+                        </td>
+                        <td><span class="badge badge-approved">{{ prescription.medicine_count }} medicine(s)</span></td>
+                        <td>{{ prescription.created_at.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            <div class="appointment-actions">
+                                <a href="{{ url_for('doctor_prescription_detail', prescription_id=prescription.prescription_id) }}"
+                                   class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('doctor_prescription_edit', prescription_id=prescription.prescription_id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-pen"></i> Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% elif not eligible_appointments %}
+        <div class="empty-state">
+            <i class="fas fa-file-prescription"></i>
+            <p>No prescriptions written yet</p>
+            <a href="{{ url_for('doctor_appointments') }}" class="btn btn-primary">
+                <i class="fas fa-calendar-check"></i> Completed appointments appear here
+            </a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-file-prescription"></i>
+            <p>You have not written any prescriptions yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Patient care illustration">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#0f766e"/>
+            <stop offset="0.55" stop-color="#0e7490"/>
+            <stop offset="1" stop-color="#1e3a8a"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="0.2" cy="0.15" r="0.85">
+            <stop offset="0" stop-color="#5eead4" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#5eead4" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="emblem" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
+            <stop offset="1" stop-color="#ccfbf1" stop-opacity="0.9"/>
+        </linearGradient>
+    </defs>
+
+    <rect width="900" height="1200" fill="url(#bg)"/>
+    <rect width="900" height="1200" fill="url(#glow)"/>
+
+    <circle cx="740" cy="200" r="260" fill="#ffffff" opacity="0.05"/>
+    <circle cx="120" cy="960" r="300" fill="#ffffff" opacity="0.05"/>
+    <circle cx="700" cy="1010" r="160" fill="#ffffff" opacity="0.06"/>
+
+    <g stroke="#a7f3d0" stroke-width="3" opacity="0.35" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 300 h120 l28 -64 l40 128 l34 -104 l26 40 h140"/>
+        <path d="M540 980 h90 l22 -50 l32 100 l28 -80 l20 30 h100"/>
+    </g>
+
+    <g opacity="0.9">
+        <rect x="120" y="352" width="72" height="72" rx="16" fill="#ffffff" opacity="0.82"/>
+        <rect x="150" y="368" width="12" height="40" rx="6" fill="#0f766e"/>
+        <rect x="136" y="382" width="40" height="12" rx="6" fill="#0f766e"/>
+    </g>
+
+    <g transform="translate(450 560)">
+        <circle r="210" fill="#ffffff" opacity="0.08"/>
+        <circle r="150" fill="url(#emblem)"/>
+        <path d="M0 -78 C -22 -110 -74 -100 -74 -56 C -74 -22 -34 12 0 42 C 34 12 74 -22 74 -56 C 74 -100 22 -110 0 -78 Z" fill="#0f766e"/>
+        <path d="M-60 40 h30 l14 -30 l18 58 l16 -44 l12 16 h30" fill="none" stroke="#0e7490" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g fill="#ffffff" opacity="0.14">
+        <circle cx="640" cy="720" r="10"/>
+        <circle cx="690" cy="770" r="6"/>
+        <circle cx="600" cy="800" r="8"/>
+        <circle cx="250" cy="620" r="7"/>
+        <circle cx="200" cy="680" r="10"/>
+        <circle cx="300" cy="700" r="5"/>
+    </g>
+</svg>

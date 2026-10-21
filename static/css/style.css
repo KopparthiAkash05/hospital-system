@@ -8,6 +8,8 @@
    1. Design tokens
    -------------------------------------------------------------------------- */
 :root {
+    color-scheme: light;
+
     /* Typography */
     --font-sans: Inter, Geist, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -57,6 +59,18 @@
     --accent-700: #1d4ed8;
     --accent-800: #1e40af;
 
+    /* Solid accent fills (buttons, active nav, chat, metric cards) */
+    --accent-fill: var(--accent-600);
+    --accent-fill-hover: var(--accent-700);
+
+    /* Secondary — informational blue (same family as the brand accent) */
+    --secondary-50: #eff6ff;
+    --secondary-100: #dbeafe;
+    --secondary-200: #bfdbfe;
+    --secondary-400: #60a5fa;
+    --secondary-600: #2563eb;
+    --secondary-700: #1d4ed8;
+
     /* Semantic */
     --success-50: #ecfdf5;
     --success-100: #d1fae5;
@@ -90,16 +104,24 @@
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
+    --space-5: 20px;
     --space-6: 24px;
+    --space-7: 28px;
     --space-8: 32px;
+    --space-10: 40px;
     --space-12: 48px;
+    --space-14: 56px;
     --space-16: 64px;
+    --space-20: 80px;
+    --space-24: 96px;
 
     /* Radii */
     --radius-sm: 6px;
     --radius-md: 8px;
+    --radius-control: 10px;
     --radius-lg: 12px;
     --radius-xl: 16px;
+    --radius-2xl: 20px;
     --radius-full: 999px;
 
     /* Elevation */
@@ -116,8 +138,8 @@
     --transition-slow: 260ms var(--ease-out);
 
     /* Layout */
-    --container-max: 1200px;
-    --navbar-height: 64px;
+    --container-max: 1280px;
+    --navbar-height: 68px;
 
     /* On-fill foregrounds — text/icons sitting on a saturated accent fill */
     --on-accent: #ffffff;
@@ -209,7 +231,18 @@
     --accent-600: #f97316;
     --accent-700: #fb923c;
     --accent-800: #ea580c;
-    --accent-text-strong: #fdba74;
+
+    /* Solid accent fills — bright orange, so labels flip to near-black */
+    --accent-fill: var(--accent-600);
+    --accent-fill-hover: var(--accent-700);
+
+    /* Secondary — informational orange (same family as the dark accent) */
+    --secondary-50: #1a0f05;
+    --secondary-100: #2b1708;
+    --secondary-200: #fdba74;
+    --secondary-400: #fb923c;
+    --secondary-600: #f97316;
+    --secondary-700: #fdba74;
 
     /* Semantic — 600 steps are dark enough for white labels, 700 steps are
        bright enough to read as text on the dark tints. */
@@ -217,7 +250,6 @@
     --success-100: #0a4429;
     --success-600: #15803d;
     --success-700: #4ade80;
-    --success-fill-deep: #166534;
     --warning-50: #2a1a03;
     --warning-100: #422006;
     --warning-600: #b45309;
@@ -232,10 +264,13 @@
 
     /* Inputs, focus, disabled */
     --input-bg: #0b0b0b;
+    --input-border: var(--border-strong);
     --focus-ring: #f97316;
     --accent-ring: rgba(249, 115, 22, 0.24);
     --success-ring: rgba(74, 222, 128, 0.20);
     --danger-ring: rgba(248, 113, 113, 0.20);
+    --disabled-bg: var(--surface-3);
+    --disabled-text: var(--gray-500);
     --overlay: rgba(0, 0, 0, 0.74);
 
     /* Neutral helpers */
@@ -247,12 +282,19 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.7), 0 1px 3px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.7);
+    --shadow-focus: 0 0 0 3px var(--accent-ring);
 
     /* On-fill foregrounds — orange is bright, so labels flip to near-black */
     --on-accent: #1c0a00;
     --on-accent-muted: rgba(28, 10, 0, 0.88);
     --on-success: #ffffff;
     --on-success-muted: rgba(255, 255, 255, 0.92);
+
+    /* Solid success fills stay deep in both themes */
+    --success-fill-deep: #166534;
+
+    /* Accent used as *text* on accent-tinted surfaces (brighter on dark) */
+    --accent-text-strong: #fdba74;
 
     /* Inverted bands */
     --band-bg: #0a0a0a;
@@ -266,6 +308,10 @@
     --close-hover-bg: rgba(0, 0, 0, 0.22);
     --selection-bg: #fdba74;
     --selection-fg: #1c0a00;
+
+    /* Legacy aliases follow the dark accent automatically */
+    --secondary-color: var(--accent-700);
+    --info-color: var(--accent-600);
 }
 
 /* --------------------------------------------------------------------------
@@ -378,8 +424,27 @@ canvas {
     margin-top: var(--space-2);
 }
 
+.mt-3 {
+    margin-top: var(--space-3);
+}
+
+.mt-4 {
+    margin-top: var(--space-4);
+}
+.mb-6 {
+    margin-bottom: var(--space-6);
+}
+
+.mt-6 {
+    margin-top: var(--space-6);
+}
+
 .mb-0 {
     margin-bottom: 0;
+}
+
+.mb-8 {
+    margin-bottom: var(--space-8);
 }
 
 /* Shared page heading block (used across all non-dashboard pages). */
@@ -463,7 +528,7 @@ canvas {
     color: var(--accent-600);
     background: var(--accent-50);
     border: 1px solid var(--accent-100);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .nav-menu {
@@ -473,6 +538,11 @@ canvas {
     flex-wrap: nowrap;
 }
 
+/* Patient Login page only: the nav buttons sit on the left side instead of the top-right. */
+/* body:has(form[action="/login"]) .nav-menu {
+    margin-right: auto;
+} */
+
 .nav-menu li {
     display: flex;
 }
@@ -480,24 +550,30 @@ canvas {
 .nav-menu a {
     display: inline-flex;
     align-items: center;
-    min-height: 36px;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
+    min-height: 40px;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
     color: var(--text-secondary);
     font-size: var(--fs-sm);
     font-weight: var(--fw-medium);
     white-space: nowrap;
-    transition: color var(--transition-fast), background-color var(--transition-fast);
+    transition: all var(--transition-fast) ease;
 }
 
 .nav-menu a:hover {
-    color: var(--text-primary);
-    background: var(--surface-3);
+    color: var(--accent-700);
+    background: var(--accent-50);
 }
 
 .nav-menu a.active {
     color: var(--accent-700);
     background: var(--accent-50);
+}
+
+body.has-sidebar .sidebar .nav-menu a.active {
+    color: var(--on-accent);
+    background: var(--accent-fill);
+    box-shadow: var(--shadow-sm);
 }
 
 .nav-toggle {
@@ -511,7 +587,7 @@ canvas {
     padding: 0;
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
@@ -582,10 +658,10 @@ canvas {
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
-    min-height: 40px;
+    min-height: 42px;
     padding: var(--space-2) var(--space-4);
     border: 1px solid transparent;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-control);
     font-family: inherit;
     font-size: var(--fs-sm);
     font-weight: var(--fw-medium);
@@ -603,21 +679,22 @@ canvas {
 }
 
 .btn-primary {
-    background: var(--accent-600);
-    border-color: var(--accent-600);
+    background: var(--accent-fill);
+    border-color: transparent;
     color: var(--on-accent);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-    background: var(--accent-700);
-    border-color: var(--accent-700);
+    background: var(--accent-fill-hover);
+    border-color: transparent;
     color: var(--on-accent);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active {
-    background: var(--accent-800);
-    border-color: var(--accent-800);
+    background: var(--accent-fill-hover);
+    border-color: var(--accent-fill-hover);
     transform: translateY(1px);
 }
 
@@ -765,10 +842,10 @@ input[type="url"],
 select,
 textarea {
     width: 100%;
-    min-height: 40px;
+    min-height: 42px;
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--input-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-control);
     background-color: var(--input-bg);
     color: var(--text-primary);
     font-family: inherit;
@@ -800,9 +877,9 @@ textarea {
 
 select {
     padding-right: var(--space-8);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2364748b' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236b7280' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right var(--space-3) center;
+    background-position: right var(--space-4) center;
     background-size: 18px 18px;
     cursor: pointer;
 }
@@ -821,7 +898,7 @@ select:focus,
 textarea:focus {
     outline: none;
     border-color: var(--accent-600);
-    box-shadow: var(--shadow-focus);
+    box-shadow: var(--shadow-focus), 0 0 0 1px var(--accent-600);
 }
 
 input:disabled,
@@ -854,6 +931,74 @@ textarea:disabled {
     color: var(--text-muted);
 }
 
+/* 12-hour preview rendered next to native time inputs by main.js. */
+.time-12hr-hint {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+/* Generic horizontal-scroll wrapper for wide tables. */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xs);
+}
+
+.table-responsive table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    background: var(--surface);
+}
+
+.table-responsive th,
+.table-responsive td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    font-size: var(--fs-sm);
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+}
+
+.table-responsive thead th {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Inline checkbox used for account/permission toggles. */
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+/* Side-by-side buttons inside a card or auth form. */
+.auth-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.auth-form-actions .btn {
+    flex: 1 1 auto;
+}
+
 /* Password field with reveal toggle. */
 .password-wrapper {
     position: relative;
@@ -875,10 +1020,14 @@ textarea:disabled {
     width: 40px;
     height: 40px;
     margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    font-family: inherit;
     font-size: var(--fs-base);
     color: var(--text-muted);
     cursor: pointer;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
@@ -912,7 +1061,7 @@ textarea:disabled {
     padding: var(--space-3) var(--space-4);
     border: 1px solid transparent;
     border-left-width: 3px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     font-size: var(--fs-sm);
     line-height: var(--lh-body);
 }
@@ -942,7 +1091,7 @@ textarea:disabled {
     background: var(--info-50);
     color: var(--info-700);
     border-color: var(--info-100);
-    border-left-color: var(--accent-600);
+    border-left-color: var(--secondary-600);
 }
 
 .close-btn {
@@ -955,7 +1104,7 @@ textarea:disabled {
     padding: 0;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     font-size: var(--fs-xl);
     line-height: 1;
     color: inherit;
@@ -964,7 +1113,7 @@ textarea:disabled {
 }
 
 .close-btn:hover {
-    background: rgba(15, 23, 42, 0.06);
+    background: var(--close-hover-bg);
 }
 
 @media (pointer: coarse) {
@@ -1004,7 +1153,8 @@ textarea:disabled {
 }
 
 .badge-rejected,
-.badge-cancelled {
+.badge-cancelled,
+.badge-no-show {
     background: var(--danger-50);
     border-color: var(--danger-100);
     color: var(--danger-700);
@@ -1019,7 +1169,7 @@ textarea:disabled {
     color: var(--text-primary);
     padding: var(--space-16) 0;
     background:
-        radial-gradient(900px 420px at 15% -10%, var(--accent-50) 0%, rgba(239, 246, 255, 0) 70%),
+        radial-gradient(900px 420px at 15% -10%, var(--accent-50) 0%, rgba(240, 253, 250, 0) 70%),
         linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
     border-bottom: 1px solid var(--border);
 }
@@ -1084,6 +1234,15 @@ textarea:disabled {
     color: var(--text-primary);
 }
 
+.section-subtitle {
+    max-width: 720px;
+    margin: calc(-1 * var(--space-7)) auto var(--space-10);
+    text-align: center;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+}
+
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1092,16 +1251,17 @@ textarea:disabled {
 
 .feature-card {
     text-align: left;
-    padding: var(--space-6);
+    padding: var(--space-7);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
     transition: border-color var(--transition-base), box-shadow var(--transition-base),
         transform var(--transition-base);
 }
 
 .feature-card:hover {
-    border-color: var(--border-strong);
+    border-color: var(--accent-200);
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
 }
@@ -1109,25 +1269,28 @@ textarea:disabled {
 .feature-icon {
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
-    margin: 0 0 var(--space-4);
+    width: 48px;
+    height: 48px;
+    margin: 0 0 var(--space-5);
     background: var(--accent-50);
     color: var(--accent-700);
     border: 1px solid var(--accent-100);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     font-size: var(--fs-lg);
 }
 
 .feature-card h3 {
     font-size: var(--fs-base);
     margin-bottom: var(--space-2);
+    color: var(--text-primary);
 }
 
 .feature-card p {
     font-size: var(--fs-sm);
     line-height: var(--lh-body);
     color: var(--text-secondary);
+    font-weight: var(--fw-medium);
+    word-break: break-word;
 }
 
 .stats {
@@ -1138,8 +1301,9 @@ textarea:disabled {
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--space-6);
+    margin-bottom: var(--space-10);
     text-align: center;
 }
 
@@ -1170,8 +1334,8 @@ textarea:disabled {
     background: var(--surface);
     padding: var(--space-8);
     border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 480px;
 }
@@ -1239,28 +1403,185 @@ textarea:disabled {
 }
 
 /* --------------------------------------------------------------------------
+   10b. Auth split layout — role-specific illustration panel
+   Additive only: used by login/register pages. The plain .auth-card used
+   elsewhere is untouched.
+   -------------------------------------------------------------------------- */
+.auth-container--split {
+    align-items: stretch;
+}
+
+.auth-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    width: 100%;
+    max-width: 1060px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.auth-visual {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-10);
+    min-height: 540px;
+    color: #ffffff;
+    background-image:
+        linear-gradient(180deg, rgba(49, 46, 129, 0.18) 0%, rgba(15, 23, 42, 0.45) 45%, rgba(15, 23, 42, 0.86) 100%),
+        var(--auth-visual-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    isolation: isolate;
+}
+
+.auth-visual--patient { --auth-visual-image: url("../images/auth-patient.svg"); }
+.auth-visual--doctor { --auth-visual-image: url("../images/auth-doctor.svg"); }
+.auth-visual--admin { --auth-visual-image: url("../images/auth-admin.svg"); }
+
+.auth-visual-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.auth-visual h2 {
+    font-size: var(--fs-2xl);
+    letter-spacing: var(--tracking-tighter);
+    color: #ffffff;
+    max-width: 16ch;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+
+.auth-visual p {
+    max-width: 36ch;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.88);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+.auth-visual-list {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.auth-visual-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--fs-sm);
+    color: rgba(255, 255, 255, 0.94);
+}
+
+.auth-visual-list i {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    font-size: var(--fs-xs);
+    color: #ffffff;
+}
+
+/* Inside the split the form column drops its standalone card chrome. */
+.auth-split .auth-card {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--space-10);
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+@media (max-width: 900px) {
+    .auth-split {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-visual {
+        min-height: 210px;
+        padding: var(--space-8) var(--space-6);
+    }
+
+    .auth-visual h2 {
+        font-size: var(--fs-xl);
+    }
+
+    .auth-visual-list {
+        display: none;
+    }
+
+    .auth-split .auth-card {
+        padding: var(--space-8) var(--space-6);
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-visual {
+        min-height: 176px;
+        padding: var(--space-6) var(--space-5);
+    }
+
+    .auth-visual p {
+        display: none;
+    }
+
+    .auth-split .auth-card {
+        padding: var(--space-6) var(--space-5);
+    }
+}
+
+/* --------------------------------------------------------------------------
    11. Dashboard shell
    -------------------------------------------------------------------------- */
 .dashboard {
-    padding: var(--space-8) 0;
+    padding: var(--space-10) 0 var(--space-16);
 }
 
 .dashboard-header {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    margin-bottom: var(--space-8);
-    padding-bottom: var(--space-6);
+    gap: var(--space-3);
+    margin-bottom: var(--space-10);
+    padding-bottom: var(--space-8);
     border-bottom: 1px solid var(--border);
 }
 
 .dashboard-header h1 {
-    font-size: var(--fs-2xl);
+    font-size: var(--fs-3xl);
     letter-spacing: var(--tracking-tighter);
 }
 
 .dashboard-header p {
     color: var(--text-secondary);
+    font-size: var(--fs-lg);
 }
 
 .dashboard-grid {
@@ -1270,23 +1591,23 @@ textarea:disabled {
 
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-6);
+    margin-bottom: var(--space-10);
 }
 
 .action-card {
     display: block;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    border-radius: var(--radius-xl);
+    padding: var(--space-7);
     box-shadow: var(--shadow-xs);
-    transition: border-color var(--transition-base), box-shadow var(--transition-base),
-        transform var(--transition-base);
+    transition: all var(--transition-base) ease;
 }
 
 .action-card:hover {
-    border-color: var(--border-strong);
+    border-color: var(--accent-200);
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
 }
@@ -1294,14 +1615,14 @@ textarea:disabled {
 .action-card i {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    margin-bottom: var(--space-4);
-    font-size: var(--fs-base);
+    width: 48px;
+    height: 48px;
+    margin-bottom: var(--space-5);
+    font-size: var(--fs-lg);
     color: var(--accent-700);
     background: var(--accent-50);
     border: 1px solid var(--accent-100);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .action-card h3 {
@@ -1314,21 +1635,41 @@ textarea:disabled {
     color: var(--text-secondary);
 }
 
+/* An action card that is itself a form (for example the completion form). */
+.action-card--form {
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: default;
+}
+
+.action-card--form:hover {
+    transform: none;
+}
+
+.action-card--form .form-group {
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-3);
+    text-align: left;
+}
+
 .dashboard-section {
     background: var(--surface);
-    padding: var(--space-6);
+    padding: var(--space-7);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xs);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-8);
 }
 
 .dashboard-section h2 {
     display: flex;
     align-items: center;
-    font-size: var(--fs-base);
+    gap: var(--space-3);
+    font-size: var(--fs-lg);
     letter-spacing: var(--tracking-tight);
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-5);
     border-bottom: 1px solid var(--border);
 }
 
@@ -1344,17 +1685,17 @@ textarea:disabled {
 .appointment-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-xs);
-    transition: border-color var(--transition-base), box-shadow var(--transition-base),
-        transform var(--transition-base);
+    border-radius: var(--radius-xl);
+    padding: var(--space-7);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base) ease;
 }
 
 .doctor-card:hover,
 .appointment-card:hover {
-    border-color: var(--border-strong);
+    border-color: var(--accent-200);
     box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .doctor-card {
@@ -1365,14 +1706,14 @@ textarea:disabled {
 .doctor-avatar {
     display: grid;
     place-items: center;
-    width: 56px;
-    height: 56px;
-    margin: 0 0 var(--space-4);
+    width: 60px;
+    height: 60px;
+    margin: 0 0 var(--space-5);
     background: var(--accent-50);
     color: var(--accent-700);
     border: 1px solid var(--accent-100);
-    border-radius: var(--radius-lg);
-    font-size: var(--fs-lg);
+    border-radius: var(--radius-xl);
+    font-size: var(--fs-xl);
 }
 
 .doctor-info {
@@ -1380,8 +1721,8 @@ textarea:disabled {
 }
 
 .doctor-info h3 {
-    font-size: var(--fs-base);
-    margin-bottom: var(--space-2);
+    font-size: var(--fs-lg);
+    margin-bottom: var(--space-3);
 }
 
 .doctor-info p {
@@ -1407,9 +1748,36 @@ textarea:disabled {
 }
 
 .doctor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
     margin-top: var(--space-4);
     padding-top: var(--space-4);
     border-top: 1px solid var(--border);
+}
+
+.availability {
+    font-weight: var(--fw-medium);
+}
+
+.availability--available {
+    color: var(--success-700);
+}
+
+.availability--available i {
+    color: var(--success-700);
+}
+
+.availability--unavailable {
+    color: var(--danger-700);
+}
+
+.availability--unavailable i {
+    color: var(--danger-700);
+}
+
+.doctor-info p.distance {
+    flex-wrap: wrap;
 }
 
 .doctors-grid {
@@ -1461,7 +1829,7 @@ textarea:disabled {
 .appointments-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
 }
 
 .appointments-grid {
@@ -1484,7 +1852,8 @@ textarea:disabled {
 
 .appointment-info h3 {
     font-size: var(--fs-base);
-    margin-bottom: var(--space-2);
+    font-weight: var(--fw-semibold);
+    margin-bottom: var(--space-3);
 }
 
 .appointment-info p {
@@ -1518,11 +1887,13 @@ textarea:disabled {
 
 /* Status accent bar — never the only signal: the badge carries the text. */
 .appointment-card.status-completed {
-    border-left-color: var(--success-600);
+    border-left: 4px solid var(--success-600);
+    background: linear-gradient(90deg, var(--success-50) 0%, var(--surface) 40%);
 }
 
 .appointment-card.status-cancelled {
-    border-left-color: var(--danger-600);
+    border-left: 4px solid var(--danger-600);
+    background: linear-gradient(90deg, var(--danger-50) 0%, var(--surface) 40%);
 }
 
 .appointment-card.status-rejected {
@@ -1530,11 +1901,18 @@ textarea:disabled {
 }
 
 .appointment-card.status-approved {
-    border-left-color: var(--accent-600);
+    border-left: 4px solid var(--accent-600);
+    background: linear-gradient(90deg, var(--accent-50) 0%, var(--surface) 40%);
 }
 
 .appointment-card.status-pending {
-    border-left-color: var(--warning-600);
+    border-left: 4px solid var(--warning-600);
+    background: linear-gradient(90deg, var(--warning-50) 0%, var(--surface) 40%);
+}
+
+.appointment-card.status-no-show {
+    border-left: 4px solid var(--danger-600);
+    background: linear-gradient(90deg, var(--danger-50) 0%, var(--surface) 40%);
 }
 
 /* --------------------------------------------------------------------------
@@ -1545,7 +1923,8 @@ textarea:disabled {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xs);
 }
 
 .appointments-table table {
@@ -1604,7 +1983,21 @@ textarea:disabled {
 
 .appointments-table form input[type="number"] {
     width: 72px;
-    min-height: 32px;
+    min-height: 34px;
+    padding: var(--space-1) var(--space-2);
+    text-align: center;
+}
+
+.complete-form {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.follow-up-input {
+    width: 72px;
+    min-height: 34px;
     padding: var(--space-1) var(--space-2);
     text-align: center;
 }
@@ -1637,10 +2030,17 @@ textarea:disabled {
     gap: var(--space-1);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     padding: var(--space-6);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
     text-align: left;
+    transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    border-color: var(--border-strong);
 }
 
 .stat-card i {
@@ -1650,7 +2050,7 @@ textarea:disabled {
     height: 40px;
     margin-bottom: var(--space-3);
     font-size: var(--fs-base);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     background: var(--surface-3);
     color: var(--text-secondary);
 }
@@ -1705,9 +2105,16 @@ textarea:disabled {
 
 .search-form .form-row {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-5);
     align-items: end;
+}
+
+.search-form .form-group:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: flex-end;
 }
 
 .search-form .form-group {
@@ -1760,17 +2167,17 @@ textarea:disabled {
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
-    padding: var(--space-12) var(--space-6);
+    padding: var(--space-16) var(--space-8);
     border: 1px dashed var(--border-strong);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     background: var(--surface-2);
     color: var(--text-secondary);
 }
 
 .empty-state i {
     display: block;
-    font-size: var(--fs-2xl);
-    margin-bottom: var(--space-3);
+    font-size: var(--fs-3xl);
+    margin-bottom: var(--space-4);
     color: var(--gray-500);
 }
 
@@ -1792,8 +2199,8 @@ textarea:disabled {
     inset: 0;
     z-index: 1100;
     background-color: var(--overlay);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
     padding: var(--space-6);
     overflow-y: auto;
     animation: fadeOverlay var(--transition-base);
@@ -1801,13 +2208,13 @@ textarea:disabled {
 
 .modal-card {
     background: var(--surface);
-    margin: var(--space-12) auto;
-    padding: var(--space-6);
+    margin: var(--space-16) auto;
+    padding: var(--space-8);
     border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
     width: 100%;
-    max-width: 440px;
+    max-width: 480px;
     animation: fadeIn var(--transition-slow);
 }
 
@@ -1851,10 +2258,10 @@ textarea:disabled {
 .booking-step {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-xs);
-    margin-bottom: var(--space-6);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-8);
 }
 
 .booking-step h2 {
@@ -1905,7 +2312,7 @@ textarea:disabled {
     padding: var(--space-3) var(--space-4);
     border: 1px solid var(--accent-100);
     border-left: 3px solid var(--accent-600);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     margin-bottom: var(--space-6);
 }
 
@@ -1932,7 +2339,7 @@ textarea:disabled {
 .doctor-summary {
     background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     padding: var(--space-4);
     margin-bottom: var(--space-6);
     font-size: var(--fs-sm);
@@ -2018,7 +2425,7 @@ textarea:disabled {
     border: 1px solid var(--border);
     padding: var(--space-6);
     margin: var(--space-4) 0;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .suggested-department i {
@@ -2093,20 +2500,20 @@ textarea:disabled {
    -------------------------------------------------------------------------- */
 .admin-metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--space-6);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-10);
 }
 
 .metric-card {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
+    padding: var(--space-7);
+    border-radius: var(--radius-xl);
     border: 1px solid var(--border);
     background: var(--surface);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
 }
 
 .metric-card--accent {
@@ -2172,15 +2579,17 @@ textarea:disabled {
 .panel {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-xs);
+    border-radius: var(--radius-xl);
+    padding: var(--space-7);
+    box-shadow: var(--shadow-sm);
 }
 
 .panel-title {
-    font-size: var(--fs-base);
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-4);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-5);
     border-bottom: 1px solid var(--border);
     text-align: center;
 }
@@ -2263,9 +2672,9 @@ textarea:disabled {
     width: 56px;
     height: 56px;
     border-radius: var(--radius-full);
-    background: var(--accent-600);
+    background: var(--accent-fill);
     color: var(--on-accent);
-    border: 1px solid var(--accent-700);
+    border: 1px solid var(--accent-fill-hover);
     font-size: var(--fs-lg);
     cursor: pointer;
     box-shadow: var(--shadow-lg);
@@ -2273,7 +2682,7 @@ textarea:disabled {
 }
 
 #chatbot-toggle:hover {
-    background: var(--accent-700);
+    background: var(--accent-fill-hover);
     transform: translateY(-2px);
 }
 
@@ -2303,7 +2712,7 @@ textarea:disabled {
     justify-content: space-between;
     align-items: center;
     gap: var(--space-2);
-    background: var(--accent-600);
+    background: var(--accent-fill);
     color: var(--on-accent);
     padding: var(--space-3) var(--space-4);
     font-size: var(--fs-sm);
@@ -2351,7 +2760,7 @@ textarea:disabled {
 
 .message.user {
     align-self: flex-end;
-    background: var(--accent-600);
+    background: var(--accent-fill);
     color: var(--on-accent);
     border-bottom-right-radius: var(--radius-sm);
 }
@@ -2381,8 +2790,8 @@ textarea:disabled {
 }
 
 .chat-options button:hover {
-    background: var(--accent-600);
-    border-color: var(--accent-600);
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
     color: var(--on-accent);
 }
 
@@ -2390,6 +2799,60 @@ textarea:disabled {
     font-size: var(--fs-xs);
     font-style: normal;
     color: var(--text-muted);
+}
+
+.chat-form {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+}
+
+.chat-form input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    color: var(--text-primary);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-full);
+}
+
+.chat-form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-fill);
+    box-shadow: var(--shadow-focus);
+}
+
+.chat-form input[type="text"]::placeholder {
+    color: var(--text-muted);
+}
+
+.chat-form button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--accent-fill-hover);
+    border-radius: var(--radius-full);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.chat-form button:hover {
+    background: var(--accent-fill-hover);
+}
+
+.chat-form button:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
 }
 
 /* --------------------------------------------------------------------------
@@ -2655,7 +3118,7 @@ textarea:disabled {
     }
 
     .auth-card {
-        padding: var(--space-4);
+        padding: var(--space-6);
     }
 
     .stat-card h3,
@@ -2676,13 +3139,702 @@ textarea:disabled {
     }
 
     .theme-toggle {
-        width: 34px;
-        height: 34px;
-        font-size: var(--fs-xs);
+        width: 38px;
+        height: 38px;
+        font-size: var(--fs-sm);
     }
 
     .doctor-summary p {
         flex-direction: column;
         gap: 0;
     }
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar navigation (logged-in patient / doctor / admin only)
+   Scoped to body.has-sidebar so guest pages are completely unaffected.
+   -------------------------------------------------------------------------- */
+:root {
+    --sidebar-width: 260px;
+}
+
+body.has-sidebar .sidebar {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    padding: var(--space-5) var(--space-3);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02);
+    overflow-y: auto;
+    z-index: 900;
+}
+
+body.has-sidebar .sidebar .nav-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
+}
+
+body.has-sidebar .sidebar .nav-menu li {
+    display: block;
+}
+
+body.has-sidebar .sidebar .nav-menu a {
+    display: flex;
+    width: 100%;
+    gap: var(--space-3);
+    white-space: normal;
+}
+
+/* Portal label sits above the sidebar links. */
+.sidebar-role {
+    margin: 0 0 var(--space-4);
+    padding: 0 var(--space-4);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Leading icon column keeps every sidebar row aligned. */
+body.has-sidebar .sidebar .nav-menu a i {
+    width: 18px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: var(--fs-sm);
+    opacity: 0.9;
+}
+
+/* Page content (flash messages, main, footer) sits to the right of the sidebar. */
+body.has-sidebar .app-content {
+    margin-left: var(--sidebar-width);
+    min-height: calc(100vh - var(--navbar-height));
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-10);
+}
+
+/* Phones: the sidebar becomes a slide-in drawer opened by the existing menu
+   button. No duplicate markup — the same <aside> slides over the content. */
+@media (max-width: 768px) {
+    body.has-sidebar .app-content {
+        margin-left: 0;
+        padding-top: var(--space-3);
+        padding-bottom: var(--space-8);
+    }
+
+    body.has-sidebar .sidebar {
+        display: block;
+        width: min(84vw, var(--sidebar-width));
+        max-width: var(--sidebar-width);
+        bottom: 0;
+        max-height: none;
+        border-right: 1px solid var(--border);
+        border-bottom: 0;
+        box-shadow: var(--shadow-lg);
+        z-index: 1050;
+        transform: translateX(-102%);
+        visibility: hidden;
+        pointer-events: none;
+        overscroll-behavior: contain;
+        transition: transform var(--transition-slow), visibility 0s linear var(--transition-slow);
+    }
+
+    body.has-sidebar.nav-open .sidebar {
+        transform: translateX(0);
+        visibility: visible;
+        pointer-events: auto;
+        transition: transform var(--transition-slow), visibility 0s linear 0s;
+    }
+
+    /* Background stays put while the drawer is open. */
+    body.has-sidebar.nav-open {
+        overflow: hidden;
+    }
+
+    body.has-sidebar .sidebar .nav-menu a {
+        min-height: 46px;
+        padding: var(--space-2) var(--space-4);
+    }
+
+    /* Menu button morphs into a close affordance while the drawer is open. */
+    body.has-sidebar.nav-open .nav-toggle {
+        background: var(--surface-3);
+        border-color: var(--border-strong);
+    }
+
+    body.has-sidebar.nav-open .nav-toggle span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+
+    body.has-sidebar.nav-open .nav-toggle span:nth-child(2) {
+        opacity: 0;
+    }
+
+    body.has-sidebar.nav-open .nav-toggle span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+}
+
+/* Dimming backdrop behind the open drawer (rendered only for portal layouts). */
+.nav-backdrop {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1040;
+    background: var(--overlay);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    transition: opacity var(--transition-base), visibility 0s linear var(--transition-base);
+}
+
+body.nav-open .nav-backdrop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity var(--transition-base), visibility 0s linear 0s;
+}
+
+@media (min-width: 769px) {
+    .nav-backdrop {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Feedback & ratings
+   -------------------------------------------------------------------------- */
+.star-rating {
+    display: inline-flex;
+    gap: 2px;
+    color: var(--border-strong);
+}
+
+.star-rating i {
+    font-size: 0.95rem;
+}
+
+.star-rating i.filled {
+    color: var(--warning-600);
+}
+
+.star-input {
+    display: inline-flex;
+    gap: var(--space-1);
+}
+
+.star-option {
+    background: none;
+    border: 0;
+    padding: var(--space-1);
+    line-height: 1;
+    font-size: 1.5rem;
+    color: var(--border-strong);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.star-option:hover {
+    color: var(--warning-600);
+    opacity: 0.55;
+    transform: translateY(-1px);
+}
+
+.star-option.selected {
+    color: var(--warning-600);
+    opacity: 1;
+}
+
+.star-option:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.rating-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.rating-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 48px;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--fs-sm);
+}
+
+.rating-row-label {
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.rating-bar {
+    height: 10px;
+    background: var(--surface-3);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.rating-bar-fill {
+    height: 100%;
+    background: var(--warning-600);
+    border-radius: var(--radius-full);
+    min-width: 0;
+}
+
+.rating-row-count {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.feedback-list {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.feedback-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.feedback-card--hidden {
+    background: var(--surface-2);
+    border-style: dashed;
+    opacity: 0.75;
+}
+
+.feedback-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.feedback-card-rating {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.feedback-comment {
+    margin-top: var(--space-3);
+    line-height: var(--lh-body);
+    color: var(--text-primary);
+}
+
+.feedback-comment--empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.feedback-card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.feedback-edit summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.feedback-edit summary::-webkit-details-marker {
+    display: none;
+}
+
+.feedback-edit-form {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--border);
+}
+
+.feedback-table-comment {
+    max-width: 320px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.row-muted td {
+    color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Prescription medicine table (dynamic doctor form)
+   -------------------------------------------------------------------------- */
+.rx-table-wrap {
+    overflow-x: auto;
+}
+
+.rx-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-sm);
+}
+
+.rx-table th {
+    text-align: left;
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+}
+
+.rx-table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.rx-table input {
+    width: 100%;
+    min-width: 130px;
+}
+
+.rx-row-number {
+    width: 36px;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .rating-row {
+        grid-template-columns: 84px 1fr 40px;
+        gap: var(--space-2);
+    }
+
+    .feedback-card-head {
+        flex-direction: column;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Live queue management (doctor queue dashboard + patient queue status)
+   -------------------------------------------------------------------------- */
+.badge-waiting {
+    background: var(--info-50);
+    border-color: var(--info-100);
+    color: var(--info-700);
+}
+
+.badge-in-progress {
+    background: var(--accent-50);
+    border-color: var(--accent-200);
+    color: var(--accent-700);
+}
+
+.badge-skipped {
+    background: var(--surface-3);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+}
+
+.queue-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
+}
+
+.queue-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 96px;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.queue-chip-value {
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.queue-chip-label {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.queue-chip-waiting { border-top: 3px solid var(--info-700); }
+.queue-chip-progress { border-top: 3px solid var(--accent-600); }
+.queue-chip-done { border-top: 3px solid var(--success-600); }
+.queue-chip-skipped { border-top: 3px solid var(--border-strong); }
+.queue-chip-cancelled { border-top: 3px solid var(--danger-600); }
+.queue-chip-last { border-top: 3px solid var(--warning-600); }
+
+.queue-now-serving {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-5);
+    background: var(--accent-50);
+    border: 1px solid var(--accent-200);
+    border-radius: var(--radius-lg);
+    color: var(--accent-800);
+}
+
+.queue-walkin-panel {
+    margin-bottom: var(--space-5);
+}
+
+.queue-walkin-form .form-row {
+    align-items: flex-end;
+}
+
+.queue-walkin-submit {
+    display: flex;
+    align-items: flex-end;
+}
+
+.queue-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-sm);
+}
+
+.queue-table th {
+    text-align: left;
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+}
+
+.queue-table td {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.queue-table tr[data-status="In Progress"] {
+    background: var(--accent-50);
+}
+
+.queue-number-cell {
+    font-family: var(--font-mono);
+    font-size: var(--fs-base);
+    white-space: nowrap;
+}
+
+.queue-kind {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.queue-row-actions {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    gap: var(--space-2);
+}
+
+.queue-row-actions form {
+    display: inline-flex;
+}
+
+/* Patient "My Queue Status" cards */
+.queue-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.queue-status-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+}
+
+.queue-status-card.queue-status-in-progress {
+    border-left-color: var(--accent-600);
+    background: linear-gradient(90deg, var(--accent-50) 0%, var(--surface) 45%);
+}
+
+.queue-status-card.queue-status-waiting {
+    border-left-color: var(--info-700);
+}
+
+.queue-status-card.queue-status-completed {
+    border-left-color: var(--success-600);
+    background: linear-gradient(90deg, var(--success-50) 0%, var(--surface) 45%);
+}
+
+.queue-status-card.queue-status-cancelled {
+    border-left-color: var(--danger-600);
+    background: linear-gradient(90deg, var(--danger-50) 0%, var(--surface) 45%);
+}
+
+.queue-status-card.queue-status-skipped {
+    border-left-color: var(--border-strong);
+}
+
+.queue-status-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.queue-number-big {
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-semibold);
+    color: var(--accent-700);
+    letter-spacing: var(--tracking-tight);
+}
+
+.queue-status-info h3 {
+    margin-bottom: 2px;
+    font-size: var(--fs-base);
+}
+
+.queue-status-info p {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.queue-status-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-1);
+}
+
+.queue-ahead {
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+}
+
+/* Frequency dropdown cell on the prescription form */
+.rx-table select {
+    width: 100%;
+    min-width: 130px;
+}
+
+.rx-frequency-custom {
+    margin-top: var(--space-2);
+}
+
+.rx-frequency-custom[hidden] {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   25. Theme cross-fade & scrollbars
+   Surfaces that don't otherwise animate ease between light and dark instead of
+   snapping. Interaction transitions declared earlier keep their own rules.
+   -------------------------------------------------------------------------- */
+body,
+.navbar,
+.sidebar,
+.footer,
+.alert,
+.badge,
+.dashboard-section,
+.appointments-table,
+.appointments-table table,
+.appointments-table th,
+.auth-split,
+.hero,
+.features,
+.stats {
+    transition: background-color var(--transition-base), border-color var(--transition-base),
+        color var(--transition-base);
+}
+
+/* Slim, theme-aware scrollbars for pane-like regions. */
+html {
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+body.has-sidebar .sidebar,
+.appointments-table,
+.rx-table-wrap,
+#chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+body.has-sidebar .sidebar::-webkit-scrollbar,
+.appointments-table::-webkit-scrollbar,
+.rx-table-wrap::-webkit-scrollbar,
+#chat-messages::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.has-sidebar .sidebar::-webkit-scrollbar-thumb,
+.appointments-table::-webkit-scrollbar-thumb,
+.rx-table-wrap::-webkit-scrollbar-thumb,
+#chat-messages::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-full);
+}
+
+body.has-sidebar .sidebar::-webkit-scrollbar-track,
+.appointments-table::-webkit-scrollbar-track,
+.rx-table-wrap::-webkit-scrollbar-track,
+#chat-messages::-webkit-scrollbar-track {
+    background: transparent;
 }

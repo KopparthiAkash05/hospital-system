@@ -25,6 +25,55 @@
         </div>
     </div>
 
+    <!-- Required management statistics -->
+    <div class="stats-grid mb-8">
+        <div class="stat-card primary">
+            <i class="fas fa-users"></i>
+            <h3>{{ total_patients }}</h3>
+            <p>Total Patients</p>
+        </div>
+        <div class="stat-card success">
+            <i class="fas fa-user-md"></i>
+            <h3>{{ total_doctors }}</h3>
+            <p>Total Doctors</p>
+        </div>
+        <div class="stat-card warning">
+            <i class="fas fa-building"></i>
+            <h3>{{ total_departments }}</h3>
+            <p>Total Departments</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-calendar-day"></i>
+            <h3>{{ today_appointments }}</h3>
+            <p>Today's Appointments</p>
+        </div>
+        <div class="stat-card warning">
+            <i class="fas fa-hourglass-half"></i>
+            <h3>{{ status_counts.Pending }}</h3>
+            <p>Pending Appointments</p>
+        </div>
+        <div class="stat-card success">
+            <i class="fas fa-calendar-check"></i>
+            <h3>{{ status_counts.Approved }}</h3>
+            <p>Confirmed Appointments</p>
+        </div>
+        <div class="stat-card primary">
+            <i class="fas fa-check-double"></i>
+            <h3>{{ status_counts.Completed }}</h3>
+            <p>Completed Appointments</p>
+        </div>
+        <div class="stat-card danger">
+            <i class="fas fa-times-circle"></i>
+            <h3>{{ status_counts.Cancelled }}</h3>
+            <p>Cancelled Appointments</p>
+        </div>
+        <a href="{{ url_for('admin_feedback') }}" class="stat-card warning" title="Review patient feedback">
+            <i class="fas fa-star"></i>
+            <h3>{{ total_feedback }}</h3>
+            <p>Feedback Reviews{% if total_feedback %} (avg {{ average_rating }}★){% endif %}</p>
+        </a>
+    </div>
+
     <!-- Charts Section -->
     <div class="chart-grid">
         <!-- Pie Chart: Departments -->
@@ -94,20 +143,20 @@ function cssToken(name, fallback) {
 function chartPalette() {
     return {
         series: [
-            cssToken('--accent-600', '#2563eb'),
-            cssToken('--success-600', '#059669'),
-            cssToken('--warning-600', '#d97706'),
-            cssToken('--danger-600', '#dc2626'),
-            cssToken('--accent-800', '#1e40af'),
-            cssToken('--info-700', '#0891b2'),
-            cssToken('--accent-400', '#7c3aed')
+            cssToken('--accent-600', '#0D9488'),
+            cssToken('--success-600', '#15803D'),
+            cssToken('--warning-600', '#D97706'),
+            cssToken('--danger-600', '#DC2626'),
+            cssToken('--secondary-600', '#0284C7'),
+            cssToken('--indigo-500', '#6366F1'),
+            cssToken('--accent-400', '#2DD4BF')
         ],
-        sliceBorder: cssToken('--surface', '#ffffff'),
+        sliceBorder: cssToken('--surface', '#FFFFFF'),
         label: cssToken('--text-secondary', '#475569'),
-        axis: cssToken('--text-muted', '#64748b'),
-        grid: cssToken('--border', '#e6e9ee'),
-        bar: cssToken('--accent-600', '#2563eb'),
-        barHover: cssToken('--accent-800', '#1d4ed8')
+        axis: cssToken('--text-muted', '#64748B'),
+        grid: cssToken('--border', '#E2E8F0'),
+        bar: cssToken('--accent-600', '#0D9488'),
+        barHover: cssToken('--accent-800', '#115E59')
     };
 }
 

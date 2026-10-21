@@ -85,4 +85,30 @@
     </div>
 </section>
 
+<!-- Hospital Information Section -->
+<section class="features">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-hospital-alt"></i> Visit {{ hospital.name }}</h2>
+        {% if hospital.tagline %}<p class="section-subtitle">{{ hospital.tagline }}</p>{% endif %}
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h3>Email</h3>
+                <p>{{ hospital.email or 'Not available' }}</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Opening Hours</h3>
+                <p>{{ hospital.opening_hours or 'Not available' }}</p>
+            </div>
+        </div>
+        {% if hospital.about %}
+        <p class="section-subtitle">{{ hospital.about }}</p>
+        {% endif %}
+    </div>
+</section>
 {% endblock %}

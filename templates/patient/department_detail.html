@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ department.name }} - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-stethoscope"></i> {{ department.name }}</h1>
+        {% if department.description %}
+        <p>{{ department.description }}</p>
+        {% endif %}
+        <p><i class="fas fa-users"></i> {{ doctors|length }} {{ 'doctor' if doctors|length == 1 else 'doctors' }} in this department</p>
+    </div>
+
+    <div class="filter-section">
+        <a href="{{ url_for('patient_departments') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> All Departments
+        </a>
+    </div>
+
+    {% if doctors %}
+    <div class="doctors-grid">
+        {% for doctor in doctors %}
+        <div class="doctor-card">
+            <div class="doctor-avatar">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <div class="doctor-info">
+                <h3>Dr. {{ doctor.name }}</h3>
+                <p class="specialization"><i class="fas fa-stethoscope"></i> {{ doctor.specialization }}</p>
+                <p><i class="fas fa-briefcase"></i> {{ doctor.experience }} years experience</p>
+                {% if doctor.consultation_fee %}
+                <p><i class="fas fa-rupee-sign"></i> &#8377;{{ doctor.consultation_fee }} consultation</p>
+                {% endif %}
+                <p>
+                    <i class="fas fa-circle"></i>
+                    <span class="badge badge-{{ 'approved' if doctor.availability_status == 'Available' else 'rejected' }}">
+                        {{ doctor.availability_status }}
+                    </span>
+                </p>
+            </div>
+            <div class="doctor-actions">
+                <a href="{{ url_for('doctor_profile', doctor_id=doctor.doctor_id) }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-id-card"></i> View Profile
+                </a>
+                <a href="{{ url_for('book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-block">
+                    <i class="fas fa-calendar-plus"></i> Book Appointment
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-user-md"></i>
+        <p>No doctors are currently assigned to this department</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

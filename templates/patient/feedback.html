@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars_display, star_input %}
+
+{% block title %}Feedback & Ratings - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-star"></i> Feedback &amp; Ratings</h1>
+        <p>Rate your completed visits and manage the reviews you have already shared</p>
+    </div>
+
+    <!-- Leave feedback -->
+    {% if eligible_appointments %}
+    <div class="dashboard-section">
+        <h2><i class="fas fa-pen"></i> Share Feedback</h2>
+        <div class="panel">
+            <form method="POST" action="{{ url_for('submit_feedback') }}" class="settings-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="appointment_id">
+                            <i class="fas fa-calendar-check"></i> Appointment
+                        </label>
+                        <select name="appointment_id" id="appointment_id" required>
+                            <option value="">Choose a completed appointment</option>
+                            {% for appointment in eligible_appointments %}
+                            <option value="{{ appointment.appointment_id }}"
+                                    {% if preselect_appointment_id == appointment.appointment_id %}selected{% endif %}>
+                                #{{ appointment.appointment_id }} &mdash; Dr. {{ appointment.doctor_name }}
+                                ({{ appointment.date }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-star"></i> Rating (1-5)</label>
+                        {{ star_input(selected=0, labels=rating_labels) }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="comment">
+                        <i class="fas fa-comment"></i> Written feedback
+                        <small>(optional, up to {{ max_comment_length }} characters)</small>
+                    </label>
+                    <textarea name="comment" id="comment" rows="4"
+                              maxlength="{{ max_comment_length }}"
+                              placeholder="Tell us about your experience with the doctor and the hospital..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Submit Feedback
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-clipboard-check"></i>
+        <p>No completed appointments are waiting for feedback</p>
+        <a href="{{ url_for('patient_appointments') }}" class="btn btn-primary">
+            <i class="fas fa-calendar-alt"></i> My Appointments
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Feedback history -->
+    <div class="dashboard-section">
+        <h2><i class="fas fa-history"></i> My Reviews</h2>
+
+        {% if feedback_history %}
+        <div class="feedback-list">
+            {% for feedback in feedback_history %}
+            <div class="feedback-card{% if feedback.is_hidden %} feedback-card--hidden{% endif %}">
+                <div class="feedback-card-head">
+                    <div>
+                        <strong>Dr. {{ feedback.doctor_name or 'Unknown doctor' }}</strong>
+                        <br>
+                        <small>
+                            Appointment #{{ feedback.appointment_id }} &middot;
+                            {{ feedback.appointment_date }}
+                            {{ feedback.appointment_time_formatted }}
+                        </small>
+                    </div>
+                    <div class="feedback-card-rating">
+                        {{ stars_display(feedback.rating) }}
+                        <span class="badge badge-approved">{{ rating_labels.get(feedback.rating, '') }}</span>
+                    </div>
+                </div>
+
+                {% if feedback.comment %}
+                <p class="feedback-comment">{{ feedback.comment }}</p>
+                {% else %}
+                <p class="feedback-comment feedback-comment--empty">No written comment</p>
+                {% endif %}
+
+                <div class="feedback-card-foot">
+                    <small>
+                        <i class="fas fa-clock"></i>
+                        Submitted {{ feedback.created_at.strftime('%d-%m-%Y') }}
+                        {% if feedback.updated_at and feedback.updated_at != feedback.created_at %}
+                        &middot; edited {{ feedback.updated_at.strftime('%d-%m-%Y') }}
+                        {% endif %}
+                    </small>
+
+                    {% if feedback.is_hidden %}
+                    <span class="badge badge-cancelled">Hidden by moderator</span>
+                    {% else %}
+                    <details class="feedback-edit">
+                        <summary class="btn btn-secondary btn-sm">
+                            <i class="fas fa-pen"></i> Edit
+                        </summary>
+                        <form method="POST"
+                              action="{{ url_for('update_feedback', feedback_id=feedback.feedback_id) }}"
+                              class="settings-form feedback-edit-form">
+                            <div class="form-group">
+                                <label><i class="fas fa-star"></i> Rating</label>
+                                {{ star_input(selected=feedback.rating, labels=rating_labels) }}
+                            </div>
+                            <div class="form-group">
+                                <label for="comment-{{ feedback.feedback_id }}">Written feedback</label>
+                                <textarea name="comment" id="comment-{{ feedback.feedback_id }}" rows="3"
+                                          maxlength="{{ max_comment_length }}">{{ feedback.comment or '' }}</textarea>
+                            </div>
+                            <div class="appointment-actions">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-save"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </details>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-star"></i>
+            <p>You have not shared any feedback yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function () {
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('.star-option');
+        if (!button) return;
+
+        var wrap = button.closest('[data-star-input]');
+        if (!wrap) return;
+
+        var value = parseInt(button.getAttribute('data-value'), 10);
+        var hidden = wrap.querySelector('input[type="hidden"]');
+        if (hidden) hidden.value = String(value);
+
+        wrap.querySelectorAll('.star-option').forEach(function (option) {
+            var optionValue = parseInt(option.getAttribute('data-value'), 10);
+            var on = optionValue <= value;
+            option.classList.toggle('selected', on);
+            option.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    });
+})();
+</script>
+{% endblock %}

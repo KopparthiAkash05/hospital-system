@@ -6,8 +6,41 @@
 <div class="container">
     <div class="page-header">
         <h1><i class="fas fa-users"></i> Manage Patients</h1>
+        <p>{{ active_count }} active &middot; {{ inactive_count }} inactive</p>
     </div>
-    
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_patients') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Name, email or phone"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="status"><i class="fas fa-filter"></i> Status</label>
+                    <select name="status" id="status">
+                        <option value="">All</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_patients') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div class="dashboard-section">
         <div class="appointments-table">
             <table>
@@ -19,17 +52,44 @@
                         <th>Phone</th>
                         <th>Age</th>
                         <th>Gender</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for patient in patients %}
                     <tr>
                         <td>{{ patient.patient_id }}</td>
-                        <td>{{ patient.name }}</td>
+                        <td><strong>{{ patient.name }}</strong></td>
                         <td>{{ patient.email }}</td>
                         <td>{{ patient.phone }}</td>
                         <td>{{ patient.age }}</td>
                         <td>{{ patient.gender }}</td>
+                        <td>
+                            {% if patient.is_active %}
+                            <span class="badge badge-approved">Active</span>
+                            {% else %}
+                            <span class="badge badge-cancelled">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="appointment-actions">
+                                <a href="{{ url_for('admin_patient_detail', patient_id=patient.patient_id) }}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <form action="{{ url_for('admin_toggle_patient', patient_id=patient.patient_id) }}" method="POST">
+                                    <button type="submit" class="btn btn-{{ 'warning' if patient.is_active else 'success' }} btn-sm"
+                                            onclick="return confirm('{{ 'Deactivate' if patient.is_active else 'Activate' }} this patient?')">
+                                        <i class="fas fa-{{ 'ban' if patient.is_active else 'check' }}"></i>
+                                        {{ 'Deactivate' if patient.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">No patients found</td>
                     </tr>
                     {% endfor %}
                 </tbody>

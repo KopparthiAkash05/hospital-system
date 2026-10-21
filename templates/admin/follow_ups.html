@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Follow-Up Appointments - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-plus"></i> Follow-Up Appointments</h1>
+        <p>Appointments that doctors have flagged for a follow-up visit.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="search-filters">
+        <form method="GET" action="{{ url_for('admin_follow_ups') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="search"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" name="search" id="search"
+                           placeholder="Patient or doctor"
+                           value="{{ search if search else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="window"><i class="fas fa-filter"></i> Timeframe</label>
+                    <select name="window" id="window">
+                        <option value="all" {% if window == 'all' %}selected{% endif %}>All</option>
+                        <option value="upcoming" {% if window == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="past" {% if window == 'past' %}selected{% endif %}>Past</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('admin_follow_ups') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if follow_ups %}
+    <p class="results-count">Found {{ follow_ups|length }} follow-up(s)</p>
+
+    <div class="dashboard-section">
+        <div class="appointments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Appointment</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Visit Date</th>
+                        <th>Follow-Up Date</th>
+                        <th>Reminder</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for follow_up in follow_ups %}
+                    <tr>
+                        <td>#{{ follow_up.appointment_id }}</td>
+                        <td>
+                            <strong>{{ follow_up.patient_name or '-' }}</strong>
+                            {% if follow_up.patient_phone %}<br><small>{{ follow_up.patient_phone }}</small>{% endif %}
+                        </td>
+                        <td>
+                            {{ follow_up.doctor_name or '-' }}
+                            {% if follow_up.specialization %}<br><small>{{ follow_up.specialization }}</small>{% endif %}
+                        </td>
+                        <td>{{ follow_up.visit_date }}<br><small>{{ follow_up.visit_time_formatted }}</small></td>
+                        <td><strong>{{ follow_up.follow_up_date }}</strong></td>
+                        <td>
+                            {% if follow_up.follow_up_reminder_sent %}
+                            <span class="badge badge-completed">Sent</span>
+                            {% else %}
+                            <span class="badge badge-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if follow_up.status == 'Completed' %}
+                            <span class="badge badge-completed">Completed</span>
+                            {% elif follow_up.status == 'Approved' %}
+                            <span class="badge badge-approved">Approved</span>
+                            {% elif follow_up.status in ['Cancelled', 'Rejected'] %}
+                            <span class="badge badge-cancelled">{{ follow_up.status }}</span>
+                            {% else %}
+                            <span class="badge badge-pending">{{ follow_up.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-plus"></i>
+        <p>No follow-up appointments found</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

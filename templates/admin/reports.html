@@ -28,7 +28,7 @@
                         <td>{{ appointment.patient_name }}</td>
                         <td>Dr. {{ appointment.doctor_name }}</td>
                         <td>{{ appointment.date }}</td>
-                        <td>{{ appointment.time }}</td>
+                        <td>{{ appointment.time_formatted }}</td>
                         <td><span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span></td>
                     </tr>
                     {% endfor %}

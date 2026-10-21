@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - MediCare Hospital{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-bell"></i> Notifications</h1>
+            <p>Appointment updates for your account</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-section">
+                <h2>
+                    <i class="fas fa-inbox"></i> Notifications
+                    {% if unread_count > 0 %}
+                    <span class="badge badge-pending">{{ unread_count }} unread</span>
+                    {% endif %}
+                </h2>
+
+                {% if notifications %}
+                <div class="search-filters">
+                    <form method="POST" action="{{ url_for('mark_notification_read') }}" class="search-form">
+                        <input type="hidden" name="action" value="read_all">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-check-double"></i> Bulk actions</label>
+                                <button type="submit" class="btn btn-primary" {% if unread_count == 0 %}disabled{% endif %}>
+                                    <i class="fas fa-check-double"></i> Mark All as Read
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="appointments-list">
+                    {% for note in notifications %}
+                    <div class="appointment-card status-{{ 'approved' if note.is_read else 'pending' }}">
+                        <div class="appointment-info">
+                            <h3>
+                                {{ note.title }}
+                                {% if not note.is_read %}
+                                <span class="badge badge-pending">New</span>
+                                {% endif %}
+                            </h3>
+                            <p><i class="fas fa-envelope"></i> {{ note.message }}</p>
+                            <p><i class="fas fa-clock"></i> {{ note.created_at }}</p>
+                            {% if note.appointment_date %}
+                            <p><i class="fas fa-calendar"></i> Visit: {{ note.appointment_date }}
+                                {% if note.appointment_time_formatted %} at {{ note.appointment_time_formatted }}{% endif %}
+                                <span class="badge badge-{{ note.appointment_status.lower() }}">{{ note.appointment_status }}</span>
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="appointment-actions">
+                            {% if note.appointment_id and user_type == 'patient' %}
+                                <a href="{{ url_for('patient_appointment_detail', appointment_id=note.appointment_id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            {% elif note.appointment_id and user_type == 'doctor' %}
+                                <a href="{{ url_for('doctor_appointment_detail', appointment_id=note.appointment_id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            {% endif %}
+
+                            {% if not note.is_read %}
+                            <form method="POST" action="{{ url_for('mark_notification_read') }}">
+                                <input type="hidden" name="notification_id" value="{{ note.notification_id }}">
+                                <button type="submit" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-check"></i> Mark Read
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications yet</p>
+                <p class="text-muted">Booking status updates will appear here.</p>
+            </div>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
